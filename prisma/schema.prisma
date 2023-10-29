@@ -8,6 +8,12 @@ datasource db {
 }
 
 model User {
-  id    Int     @default(autoincrement()) @id
-  name  String?
+  id      Int      @default(autoincrement()) @id
+  name    String?
+
+  friends   User[] @relation("friends")
+  friendsOf User[] @relation("friends")
+
+  blocked   User[] @relation("blocked")
+  blockedOf User[] @relation("blocked")
 }
