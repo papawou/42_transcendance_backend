@@ -1,39 +1,54 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
-import { User } from './user.module';
+import { Injectable } from '@nestjs/common';
+import {PrismaClient} from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+    
+    addFriend = async (id1: number, id2: number) => {
+        if (id1 === id2) {
+            throw new Error("");
+        }
 
-  async updateTwoFactorSecret(userId: number, secret: string): Promise<User> {
-    // Find the user by their ID
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!existingUser) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+        const updatedUser = await prisma.user.update({
+            where: { id: id1 },
+            include: { friends: true },
+            data: {
+                friends: {
+                connect: { id: id2 },
+                },
+            },
+        });
+        const updatedUser2 = await prisma.user.update({
+            where: { id: id2 },
+            include: { friends: true },
+            data: {
+                friends: {
+                connect: { id: id1 },
+                },
+            },
+        });
     }
 
-    // Update the user's two-factor secret
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { twoFactorSecret: secret },
-    });
-  }
-
-  async isTwoFactorEnabled(userId: number): Promise<boolean> {
-    // Find the user by their ID
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!existingUser) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+    deleteFriend = async (id1: number, id2: number) => {
+        const updatedUser = await prisma.user.update({
+            where: { id: id1 },
+            include: { friends: true },
+            data: {
+                friends: {
+                disconnect: { id: id2 },
+                },
+            },
+        });
+        const updatedUser2 = await prisma.user.update({
+            where: { id: id2 },
+            include: { friends: true },
+            data: {
+                friends: {
+                disconnect: { id: id1 },
+                },
+            },
+        });
     }
-
-    return !!existingUser.twoFactorSecret;
-  }
 }
-

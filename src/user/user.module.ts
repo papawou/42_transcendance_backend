@@ -8,4 +8,4 @@ import { TwoFactorService } from './two-factor.service';
   controllers: [UserController],
   providers: [UserService, TwoFactorService],
 })
-export class UserModule {}  
+export class UserModule {}

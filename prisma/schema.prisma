@@ -10,6 +10,13 @@ datasource db {
 model User {
   id    Int     @default(autoincrement()) @id
   name  String?
+
+  friends   User[] @relation("friends")
+  friendsOf User[] @relation("friends")
+
+  blocked   User[] @relation("blocked")
+  blockedOf User[] @relation("blocked")
+
   twoFactorEnabled Boolean  @default(false) //indicates if 2FA is enabled
   twoFactorSecret  String?  @unique        //stores the 2FA secret key
 }
