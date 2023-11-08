@@ -29,7 +29,7 @@ export class AuthController {
     @UseGuards(AuthGuard('ft'))
     async enable2FA(@Req() req) {
       // Call TwoFactorService to enable 2FA for the authenticated user
-      const userId = req.user.id; // Modify this to get the user's ID
+      const userId = req.user.id;
       const secret = await this.twoFactorService.enableTwoFactor(userId);
       return { secret };
     }
@@ -39,12 +39,10 @@ export class AuthController {
     @UseGuards(AuthGuard('ft'))
     async verify2FA(@Req() req, @Body() data: { token: string }) {
       // Call TwoFactorService to verify the 2FA code for the authenticated user
-      const userId = req.user.id; // Modify this to get the user's ID
+      const userId = req.user.id;
       const isVerified = await this.twoFactorService.verifyTwoFactor(userId, data.token);
     
       if (isVerified) {
-        // Handle successful verification, e.g., log the user in
-        // You can implement your login logic here
        return { message: '2FA verified and user is authenticated' };
       } else {
         return { message: '2FA verification failed' };
