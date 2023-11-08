@@ -1,25 +1,23 @@
-import { Controller, Get, Delete, Post, Param, UseGuards, Req, Body } from '@nestjs/common';
+import { Controller, Delete, Get, Req, Body, UseGuards, Param, Post } from '@nestjs/common';
 import { UserService } from './user.service';
+import { PrismaClient } from '@prisma/client'
 import { TwoFactorService } from './two-factor.service';
 import { authenticator } from 'otplib';
-import { AuthGuard } from '@nestjs/passport'; // Import the necessary auth guard for protecting routes
-import { PrismaClient } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 const prisma = new PrismaClient()
 
-@Controller('users')
+@Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
-
-  @Get()
-    async getUsers(){
-    const users = (await prisma.user.findMany());
-    return users;
-  }
+  constructor(
+    private readonly userService: UserService,
+    private readonly twoFactorService: TwoFactorService // Add the TwoFactorService
+  ) {}
 
   @Post('twofactor/enable')
   @UseGuards(AuthGuard('jwt')) // Use an appropriate authentication guard
-  async enableTwoFactor(@Req() req, @Body('token') token: string) {
+  async enableTwoFactor(@Req() req: Request, @Body('token') token: string) {
     const userId = req.user.id; // Extract user ID from the JWT payload
     const secret = await this.twoFactorService.enableTwoFactor(userId);
     // Generate QR code for the user to scan with an authenticator app
@@ -30,21 +28,15 @@ export class UserController {
 
   @Post('twofactor/disable')
   @UseGuards(AuthGuard('jwt'))
-  async disableTwoFactor(@Req() req) {
+  async disableTwoFactor(@Req() req: Request) {
     const userId = req.user.id;
     await this.twoFactorService.disableTwoFactor(userId);
   }
 
-  @Post('twofactor/verify')
-  @UseGuards(AuthGuard('jwt'))
-  async verifyTwoFactor(@Req() req, @Body('token') token: string) {
-    const userId = req.user.id;
-    const isValid = await this.twoFactorService.verifyTwoFactor(userId, token);
-    if (isValid) {
-      return { message: 'Verification successful' };
-    } else {
-      return { message: 'Invalid code' };
-    }
+  @Get()
+    async getUsers(){
+    const users = (await prisma.user.findMany());
+    return users;
   }
 
   @Get(':id/friends')
@@ -86,5 +78,10 @@ export class UserController {
 
       return updatedUser;
     }
-  }
+    @Post('generate-qr-code')
+    async generateQRCode(@Req() req) {
+      const userId = req.user.id; // Get the user ID
+      const otpAuthUrl = await this.twoFactorService.generateQRCodeUrlForUser(userId);
+      return { otpAuthUrl };
+    }
 }

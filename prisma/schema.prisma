@@ -16,7 +16,14 @@ model User {
 
   blocked   User[] @relation("blocked")
   blockedOf User[] @relation("blocked")
-
-  twoFactorEnabled Boolean  @default(false) //indicates if 2FA is enabled
-  twoFactorSecret  String?  @unique        //stores the 2FA secret key
+  twoFactorSecret twoFactorSecret?
 }
+
+model twoFactorSecret {
+  id       Int     @default(autoincrement()) @id
+  secret   String
+  userId   Int     @unique
+  enabled  Boolean
+  user     User    @relation(fields: [userId], references: [id])
+}
+
