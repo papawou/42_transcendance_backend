@@ -16,4 +16,7 @@ model User {
 
   blocked   User[] @relation("blocked")
   blockedOf User[] @relation("blocked")
+
+  pending   User[] @relation("pending")
+  pendingOf User[] @relation("pending")
 }
