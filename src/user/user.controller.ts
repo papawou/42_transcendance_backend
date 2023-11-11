@@ -1,9 +1,11 @@
 import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { UserService } from './user.service';
 import { PrismaClient } from '@prisma/client'
+import { ApiTags } from '@nestjs/swagger';
 
 const prisma = new PrismaClient()
 
+@ApiTags('users')
 @Controller('users')
 export class UserController {
 	constructor(private readonly userService: UserService) { }
@@ -19,13 +21,13 @@ export class UserController {
 		const uid = Number(id);
 
 		const user = prisma.user.findUnique({
-			where: {id: uid},
+			where: { id: uid },
 		})
 
 		return user;
 	}
 
-/*------------------------------FRIENDS--------------------------*/
+	/*------------------------------FRIENDS--------------------------*/
 
 	@Get(':id/friends')
 	async getFriends(@Param('id') userId: string) {
@@ -67,7 +69,7 @@ export class UserController {
 		return updatedUser;
 	}
 
-/*------------------------------BLOCK--------------------------*/
+	/*------------------------------BLOCK--------------------------*/
 
 	@Post(':id/block-user/:blockedUserId')
 	async blockUser(
@@ -109,7 +111,7 @@ export class UserController {
 		return user.blocked;
 	}
 
-/*------------------------------FRIEND-REQUEST--------------------------*/
+	/*------------------------------FRIEND-REQUEST--------------------------*/
 
 	@Post(':id/send-friend-request/:friendId')
 	async sendFriendRequest(
