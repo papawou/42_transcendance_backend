@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client'
-import { error } from 'console';
-
-const prisma = new PrismaClient()
+import prisma from 'src/database/prismaClient';
 
 @Injectable()
 export class UserService {
@@ -98,7 +95,7 @@ export class UserService {
 
 	blockUser = async (id1: number, id2: number) => {
 
-		const areFriends = prisma.user.findUnique({
+		const areFriends = await prisma.user.findUnique({
 			where: { id: id1 },
 			select: { friends: { where: { id: id2 } } }
 		});
@@ -151,7 +148,7 @@ export class UserService {
 
 	isBlocked = async (id1: number, id2: number) => {
 
-		const isblocked = prisma.user.findUnique({
+		const isblocked = await prisma.user.findUnique({
 			where: { id: id1 },
 			select: { blocked: { where: { id: id2 } } }
 		});
