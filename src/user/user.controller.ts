@@ -1,6 +1,5 @@
 import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { PrismaClient } from '@prisma/client'
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
 

@@ -9,7 +9,7 @@ import { UserJWTPayload } from '@/shared/shared';
 export type UserJWT = {
     userId: number,
     name: string
-} | null
+}
 
 export type AuthRequest = Request & { user: UserJWT }
 
@@ -24,10 +24,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     //client -> jwtStrategy -> validate (reformat jwt payload) -> @UseGuard
-    async validate(payload: UserJWTPayload): Promise<UserJWT> {
+    async validate(payload: UserJWTPayload): Promise<UserJWT | null> {
         if (!isDef(payload)) {
             return null;
         }
-        return { userId: payload.sub, name: payload.name };
+        return { userId: Number(payload.sub), name: payload.name };
     }
 }
