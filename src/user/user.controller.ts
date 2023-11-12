@@ -26,7 +26,18 @@ export class UserController {
 		return user;
 	}
 
-	/*------------------------------FRIENDS--------------------------*/
+	@Post(':id/change-name/:newName')
+	async changeName(
+		@Param('id') id: string,
+		@Param('newName') newName: string) {
+		const uid = Number(id);
+
+		const updatedUser = await this.userService.changeUsername(uid, newName);
+
+		return updatedUser;
+	}
+
+/*------------------------------FRIENDS--------------------------*/
 
 	@Get(':id/friends')
 	async getFriends(@Param('id') userId: string) {
