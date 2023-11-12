@@ -31,11 +31,13 @@ export class UserService {
 	}
 
 	refuseFriendRequest = async (id1: number, id2: number) => {
+		console.log(id1);
+		console.log(id2);
 		await prisma.$transaction([
 			prisma.user.update({
 				where: { id: id1 },
 				data: {
-					pending: {
+					pendingOf: {
 						disconnect: { id: id2 },
 					},
 				},
@@ -43,7 +45,7 @@ export class UserService {
 			prisma.user.update({
 				where: { id: id2 },
 				data: {
-					pendingOf: {
+					pending: {
 						disconnect: { id: id1 },
 					},
 				},

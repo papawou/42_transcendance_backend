@@ -148,4 +148,18 @@ export class UserController {
 
 		return updatedUser;
 	}
+
+	@Get(':id/pending')
+	async getPending(@Param('id') userId: string) {
+		const uid = Number(userId)
+		const user = await prisma.user.findUnique({
+			where: { id: uid },
+			include: { pendingOf: true }
+		});
+
+		if (!user) {
+			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+		}
+		return user.pendingOf;
+	}
 }
