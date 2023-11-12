@@ -27,6 +27,7 @@ export class UserService {
 				},
 			}),
 		]);
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 	refuseFriendRequest = async (id1: number, id2: number) => {
@@ -48,6 +49,7 @@ export class UserService {
 				},
 			}),
 		]);
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 
@@ -69,6 +71,8 @@ export class UserService {
 				},
 			}),
 		]);
+
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 	deleteFriend = async (id1: number, id2: number) => {
@@ -91,6 +95,7 @@ export class UserService {
 				},
 			}),
 		]);
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 	blockUser = async (id1: number, id2: number) => {
@@ -122,6 +127,7 @@ export class UserService {
 				},
 			}),
 		]);
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 	unblockUser = async (id1: number, id2: number) => {
@@ -144,6 +150,7 @@ export class UserService {
 				},
 			}),
 		]);
+		return await prisma.user.findUnique({ where: { id: id1 } });
 	}
 
 	isBlocked = async (id1: number, id2: number) => {
@@ -156,5 +163,18 @@ export class UserService {
 		if (isblocked)
 			return true;
 		return false;
+	}
+
+	changeUsername = async (id: number, newName: string) => {
+
+		console.log(newName);
+		const updatedUser = await prisma.user.update({
+			where: { id: id },
+			data: { 
+				name: newName,
+			},
+		});
+
+		return updatedUser;
 	}
 }
