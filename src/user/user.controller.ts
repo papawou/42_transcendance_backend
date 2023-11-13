@@ -152,7 +152,7 @@ export class UserController {
 	) {
 		const id1 = Number(req.user.userId);
 		const id2 = Number(friendId);
-
+		console.log(id2);
 		const updatedUser = await this.userService.refuseFriendRequest(id1, id2);
 
 		return updatedUser;
