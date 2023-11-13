@@ -1,7 +1,9 @@
-import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
+import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { AuthRequest } from '@/auth/jwt.strategy';
 
 @ApiTags('users')
 @Controller('users')
@@ -25,11 +27,12 @@ export class UserController {
 		return user;
 	}
 
-	@Post(':id/change-name/:newName')
+	@UseGuards(JwtAuthGuard)
+	@Post('/change-name/:newName')
 	async changeName(
-		@Param('id') id: string,
+		@Req() req: AuthRequest,
 		@Param('newName') newName: string) {
-		const uid = Number(id);
+		const uid = Number(req.user.userId);
 
 		const updatedUser = await this.userService.changeUsername(uid, newName);
 
@@ -38,26 +41,28 @@ export class UserController {
 
 /*------------------------------FRIENDS--------------------------*/
 
-	@Get(':id/friends')
-	async getFriends(@Param('id') userId: string) {
-		const uid = Number(userId)
+	@UseGuards(JwtAuthGuard)
+	@Get('/friends')
+	async getFriends(@Req() req: AuthRequest) {
+		const uid = Number(req.user.userId)
 		const user = await prisma.user.findUnique({
 			where: { id: uid },
 			include: { friends: true }
 		});
 
 		if (!user) {
-			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+			throw new Error(`Utilisateur avec l'ID ${req.user.userId} non trouvé.`);
 		}
 		return user.friends;
 	}
 
-	@Post(':id/add-friend/:friendId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/add-friend/:friendId')
 	async addFriend(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('friendId') friendId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(friendId);
 
 		const updatedUser = await this.userService.addFriend(id1, id2);
@@ -65,12 +70,13 @@ export class UserController {
 		return updatedUser;
 	}
 
-	@Post(':id/delete-friend/:friendId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/delete-friend/:friendId')
 	async deleteFriend(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('friendId') friendId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(friendId)
 
 		const updatedUser = await this.userService.deleteFriend(id1, id2);
@@ -80,12 +86,13 @@ export class UserController {
 
 	/*------------------------------BLOCK--------------------------*/
 
-	@Post(':id/block-user/:blockedUserId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/block-user/:blockedUserId')
 	async blockUser(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('blockedUserId') blockedUserId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(blockedUserId);
 
 		const updatedUser = await this.userService.blockUser(id1, id2);
@@ -93,12 +100,13 @@ export class UserController {
 		return updatedUser;
 	}
 
-	@Post(':id/unblock-user/:blockedUserId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/unblock-user/:blockedUserId')
 	async unblockUser(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('blockedUserId') blockedUserId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(blockedUserId);
 
 		const updatedUser = await this.userService.unblockUser(id1, id2);
@@ -122,12 +130,13 @@ export class UserController {
 
 	/*------------------------------FRIEND-REQUEST--------------------------*/
 
-	@Post(':id/send-friend-request/:friendId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/send-friend-request/:friendId')
 	async sendFriendRequest(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('friendId') friendId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(friendId);
 
 		const updatedUser = await this.userService.sendFriendRequest(id1, id2);
@@ -135,12 +144,13 @@ export class UserController {
 		return updatedUser;
 	}
 
-	@Post(':id/refuse-friend-request/:friendId')
+	@UseGuards(JwtAuthGuard)
+	@Post('/refuse-friend-request/:friendId')
 	async refuseFriendRequest(
-		@Param('id') userId: string,
+		@Req() req: AuthRequest,
 		@Param('friendId') friendId: string,
 	) {
-		const id1 = Number(userId);
+		const id1 = Number(req.user.userId);
 		const id2 = Number(friendId);
 
 		const updatedUser = await this.userService.refuseFriendRequest(id1, id2);
@@ -148,16 +158,17 @@ export class UserController {
 		return updatedUser;
 	}
 
-	@Get(':id/pending')
-	async getPending(@Param('id') userId: string) {
-		const uid = Number(userId)
+	@UseGuards(JwtAuthGuard)
+	@Get('/pending')
+	async getPending(@Req() req: AuthRequest) {
+		const uid = Number(req.user.userId)
 		const user = await prisma.user.findUnique({
 			where: { id: uid },
 			include: { pendingOf: true }
 		});
 
 		if (!user) {
-			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+			throw new Error(`Utilisateur avec l'ID ${req.user.userId} non trouvé.`);
 		}
 		return user.pendingOf;
 	}
