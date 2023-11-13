@@ -49,6 +49,16 @@ export class AuthController {
       }
     }
 
+    @Get('auth/2fa/generate-qr-code')
+    @UseGuards(AuthGuard('ft'))
+    async generateQRCodeFor2FA(@Req() req) {
+      // Call TwoFactorService to generate the QR code for the authenticated user
+      const userId = req.user.id;
+      const qrCodeUrl = await this.twoFactorService.generateQRCodeUrlForUser(userId);
+  
+      return { qrCodeUrl };
+    }
+    
   // @Patch('logout')
   // async logout(@Req() req: any, @Res() res: Response): Promise<void> {
   //   await this.authService.logout(req.user.ftLogin, res);
