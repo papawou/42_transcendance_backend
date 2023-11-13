@@ -1,87 +1,164 @@
-import { Controller, Delete, Get, Req, Body, UseGuards, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { PrismaClient } from '@prisma/client'
-import { TwoFactorService } from './two-factor.service';
-import { authenticator } from 'otplib';
-import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
+import { ApiTags } from '@nestjs/swagger';
+import prisma from 'src/database/prismaClient';
 
-const prisma = new PrismaClient()
-
-@Controller('user')
+@ApiTags('users')
+@Controller('users')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly twoFactorService: TwoFactorService // Add the TwoFactorService
-  ) {}
+	constructor(private readonly userService: UserService) { }
 
-  @Post('twofactor/enable')
-  @UseGuards(AuthGuard('jwt')) // Use an appropriate authentication guard
-  async enableTwoFactor(@Req() req: Request, @Body('token') token: string) {
-    const userId = req.user.id; // Extract user ID from the JWT payload
-    const secret = await this.twoFactorService.enableTwoFactor(userId);
-    // Generate QR code for the user to scan with an authenticator app
-    const otpAuthUrl = authenticator.keyuri(req.user.email, '42_transcendence', secret);
-    const qrCodeImageUrl = await this.twoFactorService.generateQRCode(otpAuthUrl);
-    return { otpAuthUrl, qrCodeImageUrl };
-  }
+	@Get()
+	async getUsers() {
+		const users = (await prisma.user.findMany());
+		return users;
+	}
 
-  @Post('twofactor/disable')
-  @UseGuards(AuthGuard('jwt'))
-  async disableTwoFactor(@Req() req: Request) {
-    const userId = req.user.id;
-    await this.twoFactorService.disableTwoFactor(userId);
-  }
+	@Get(':id/user')
+	async getUser(@Param('id') id: string) {
+		const uid = Number(id);
 
-  @Get()
-    async getUsers(){
-    const users = (await prisma.user.findMany());
-    return users;
-  }
+		const user = prisma.user.findUnique({
+			where: { id: uid },
+		})
 
-  @Get(':id/friends')
-    async getFriends(@Param('id') userId: string) {
-    const uid = Number(userId)
-    const user = await prisma.user.findUnique({
-      where: { id: uid },
-      include: { friends: true }
-    });
+		return user;
+	}
 
-    if (!user) {
-      throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
-    }
-    return user.friends;
-  }
+	@Post(':id/change-name/:newName')
+	async changeName(
+		@Param('id') id: string,
+		@Param('newName') newName: string) {
+		const uid = Number(id);
 
-  @Post(':id/add-friend/:friendId')
-    async addFriend(
-    @Param('id') userId: string,
-    @Param('friendId') friendId: string,
-  ) {
-    const id1 = Number(userId);
-    const id2 = Number(friendId);
+		const updatedUser = await this.userService.changeUsername(uid, newName);
 
-    const updatedUser = await this.userService.addFriend(id1, id2);
+		return updatedUser;
+	}
 
-    return updatedUser;
-  }
+/*------------------------------FRIENDS--------------------------*/
 
-  @Post(':id/delete-friend/:friendId')
-    async deleteFriend(
-      @Param('id') userId: string,
-      @Param('friendId') friendId: string,
-    ) {
-      const id1 = Number(userId);
-      const id2 = Number(friendId)
+	@Get(':id/friends')
+	async getFriends(@Param('id') userId: string) {
+		const uid = Number(userId)
+		const user = await prisma.user.findUnique({
+			where: { id: uid },
+			include: { friends: true }
+		});
 
-      const updatedUser = await this.userService.deleteFriend(id1, id2);
+		if (!user) {
+			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+		}
+		return user.friends;
+	}
 
-      return updatedUser;
-    }
-    @Post('generate-qr-code')
-    async generateQRCode(@Req() req) {
-      const userId = req.user.id; // Get the user ID
-      const otpAuthUrl = await this.twoFactorService.generateQRCodeUrlForUser(userId);
-      return { otpAuthUrl };
-    }
+	@Post(':id/add-friend/:friendId')
+	async addFriend(
+		@Param('id') userId: string,
+		@Param('friendId') friendId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(friendId);
+
+		const updatedUser = await this.userService.addFriend(id1, id2);
+
+		return updatedUser;
+	}
+
+	@Post(':id/delete-friend/:friendId')
+	async deleteFriend(
+		@Param('id') userId: string,
+		@Param('friendId') friendId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(friendId)
+
+		const updatedUser = await this.userService.deleteFriend(id1, id2);
+
+		return updatedUser;
+	}
+
+	/*------------------------------BLOCK--------------------------*/
+
+	@Post(':id/block-user/:blockedUserId')
+	async blockUser(
+		@Param('id') userId: string,
+		@Param('blockedUserId') blockedUserId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(blockedUserId);
+
+		const updatedUser = await this.userService.blockUser(id1, id2);
+
+		return updatedUser;
+	}
+
+	@Post(':id/unblock-user/:blockedUserId')
+	async unblockUser(
+		@Param('id') userId: string,
+		@Param('blockedUserId') blockedUserId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(blockedUserId);
+
+		const updatedUser = await this.userService.unblockUser(id1, id2);
+
+		return updatedUser;
+	}
+
+	@Get(':id/blocked')
+	async getBlocked(@Param('id') userId: string) {
+		const uid = Number(userId)
+		const user = await prisma.user.findUnique({
+			where: { id: uid },
+			include: { blocked: true }
+		});
+
+		if (!user) {
+			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+		}
+		return user.blocked;
+	}
+
+	/*------------------------------FRIEND-REQUEST--------------------------*/
+
+	@Post(':id/send-friend-request/:friendId')
+	async sendFriendRequest(
+		@Param('id') userId: string,
+		@Param('friendId') friendId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(friendId);
+
+		const updatedUser = await this.userService.sendFriendRequest(id1, id2);
+
+		return updatedUser;
+	}
+
+	@Post(':id/refuse-friend-request/:friendId')
+	async refuseFriendRequest(
+		@Param('id') userId: string,
+		@Param('friendId') friendId: string,
+	) {
+		const id1 = Number(userId);
+		const id2 = Number(friendId);
+
+		const updatedUser = await this.userService.refuseFriendRequest(id1, id2);
+
+		return updatedUser;
+	}
+
+	@Get(':id/pending')
+	async getPending(@Param('id') userId: string) {
+		const uid = Number(userId)
+		const user = await prisma.user.findUnique({
+			where: { id: uid },
+			include: { pendingOf: true }
+		});
+
+		if (!user) {
+			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
+		}
+		return user.pendingOf;
+	}
 }
