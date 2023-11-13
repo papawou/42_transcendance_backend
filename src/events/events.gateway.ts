@@ -1,13 +1,15 @@
+import { JwtAuthGuard } from "@/auth/jwt-auth.guard";
+import { AuthRequest } from "@/auth/jwt.strategy";
 import Scene from "@/pong/base/Scene";
 import { GameEngineData } from "@/pong/base/pong";
 import { GameEngineServer } from "@/pong/server/GameEngineServer";
 import { PhysicsServer } from "@/pong/server/PhysicsServer";
 import { isDef } from "@/technical/isDef";
+import { Req, UseGuards } from "@nestjs/common";
 import { SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
 
-
-const userId = "a";
+const userId = 'a'
 
 @WebSocketGateway({ cors: true })
 export class EventsGateway {
@@ -15,6 +17,14 @@ export class EventsGateway {
 	private server?: Server;
 
 	private games: Map<string, GameEngineServer> = new Map()
+
+
+	@SubscribeMessage('connection')
+	handleConnection(client: Socket) {
+		
+		console.log("connected")
+		console.log(client.handshake.query)
+	}
 
 	@SubscribeMessage('joinRoom')
 	handleJoinRoom(client: Socket, roomId: string) {
