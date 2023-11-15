@@ -1,8 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { isDef } from '@/technical/isDef';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { NotFoundError } from 'rxjs';
 import prisma from 'src/database/prismaClient';
 
 @Injectable()
 export class UserService {
+
+
+	getUser = async (userId: number) => {
+		const user = await prisma.user.findUnique({
+			where: {id: userId},
+			include: {blocked: true}
+		});
+
+		return user;
+	}
 
 	sendFriendRequest = async (id1: number, id2: number) => {
 		if (id1 === id2) {
@@ -31,8 +43,7 @@ export class UserService {
 	}
 
 	refuseFriendRequest = async (id1: number, id2: number) => {
-		console.log(id1);
-		console.log(id2);
+
 		await prisma.$transaction([
 			prisma.user.update({
 				where: { id: id1 },
@@ -159,12 +170,9 @@ export class UserService {
 
 		const isblocked = await prisma.user.findUnique({
 			where: { id: id1 },
-			select: { blocked: { where: { id: id2 } } }
+			include: {blocked: {where: {id: id2}}}
 		});
-
-		if (isblocked)
-			return true;
-		return false;
+		return isblocked?.blocked.length;
 	}
 
 	changeUsername = async (id: number, newName: string) => {
@@ -172,7 +180,7 @@ export class UserService {
 		console.log(newName);
 		const updatedUser = await prisma.user.update({
 			where: { id: id },
-			data: { 
+			data: {
 				name: newName,
 			},
 		});

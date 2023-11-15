@@ -1,29 +1,33 @@
-import { Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, NotFoundException, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { AuthRequest } from '@/auth/jwt.strategy';
+import { User } from '@prisma/client';
+import { isDef } from '@/technical/isDef';
 
 @ApiTags('users')
 @Controller('users')
+@UsePipes(new ValidationPipe())
 export class UserController {
 	constructor(private readonly userService: UserService) { }
 
 	@Get()
-	async getUsers() {
-		const users = (await prisma.user.findMany());
+	async getUsers(): Promise<User[]> {
+		const users = await prisma.user.findMany();
+		if (!isDef(users))
+			throw new NotFoundException();
 		return users;
 	}
 
 	@Get(':id/user')
-	async getUser(@Param('id') id: string) {
-		const uid = Number(id);
+	async getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
 
-		const user = prisma.user.findUnique({
-			where: { id: uid },
-		})
+		const user = await this.userService.getUser(id);
 
+		if(!isDef(user))
+			throw new NotFoundException();
 		return user;
 	}
 
@@ -31,11 +35,13 @@ export class UserController {
 	@Post('/change-name/:newName')
 	async changeName(
 		@Req() req: AuthRequest,
-		@Param('newName') newName: string) {
+		@Param('newName') newName: string): Promise<User> {
 		const uid = Number(req.user.userId);
 
 		const updatedUser = await this.userService.changeUsername(uid, newName);
 
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
@@ -43,16 +49,15 @@ export class UserController {
 
 	@UseGuards(JwtAuthGuard)
 	@Get('/friends')
-	async getFriends(@Req() req: AuthRequest) {
+	async getFriends(@Req() req: AuthRequest): Promise<User[]> {
 		const uid = Number(req.user.userId)
 		const user = await prisma.user.findUnique({
 			where: { id: uid },
 			include: { friends: true }
 		});
 
-		if (!user) {
-			throw new Error(`Utilisateur avec l'ID ${req.user.userId} non trouvé.`);
-		}
+		if (!isDef(user))
+			throw new NotFoundException();
 		return user.friends;
 	}
 
@@ -60,13 +65,13 @@ export class UserController {
 	@Post('/add-friend/:friendId')
 	async addFriend(
 		@Req() req: AuthRequest,
-		@Param('friendId') friendId: string,
-	) {
+		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
-		const id2 = Number(friendId);
 
-		const updatedUser = await this.userService.addFriend(id1, id2);
+		const updatedUser = await this.userService.addFriend(id1, friendId);
 
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
@@ -74,13 +79,13 @@ export class UserController {
 	@Post('/delete-friend/:friendId')
 	async deleteFriend(
 		@Req() req: AuthRequest,
-		@Param('friendId') friendId: string,
-	) {
+		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
-		const id2 = Number(friendId)
 
-		const updatedUser = await this.userService.deleteFriend(id1, id2);
+		const updatedUser = await this.userService.deleteFriend(id1, friendId);
 
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
@@ -90,13 +95,13 @@ export class UserController {
 	@Post('/block-user/:blockedUserId')
 	async blockUser(
 		@Req() req: AuthRequest,
-		@Param('blockedUserId') blockedUserId: string,
-	) {
+		@Param('blockedUserId', ParseIntPipe) blockedUserId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
-		const id2 = Number(blockedUserId);
 
-		const updatedUser = await this.userService.blockUser(id1, id2);
+		const updatedUser = await this.userService.blockUser(id1, blockedUserId);
 
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
@@ -104,28 +109,14 @@ export class UserController {
 	@Post('/unblock-user/:blockedUserId')
 	async unblockUser(
 		@Req() req: AuthRequest,
-		@Param('blockedUserId') blockedUserId: string,
-	) {
+		@Param('blockedUserId') blockedUserId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
-		const id2 = Number(blockedUserId);
 
-		const updatedUser = await this.userService.unblockUser(id1, id2);
+		const updatedUser = await this.userService.unblockUser(id1, blockedUserId);
 
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
-	}
-
-	@Get(':id/blocked')
-	async getBlocked(@Param('id') userId: string) {
-		const uid = Number(userId)
-		const user = await prisma.user.findUnique({
-			where: { id: uid },
-			include: { blocked: true }
-		});
-
-		if (!user) {
-			throw new Error(`Utilisateur avec l'ID ${userId} non trouvé.`);
-		}
-		return user.blocked;
 	}
 
 	/*------------------------------FRIEND-REQUEST--------------------------*/
@@ -134,13 +125,35 @@ export class UserController {
 	@Post('/send-friend-request/:friendId')
 	async sendFriendRequest(
 		@Req() req: AuthRequest,
-		@Param('friendId') friendId: string,
-	) {
+		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
+		
 		const id1 = Number(req.user.userId);
-		const id2 = Number(friendId);
 
-		const updatedUser = await this.userService.sendFriendRequest(id1, id2);
+		const isFriend = await prisma.user.findUnique({
+			where: {id: id1},
+			include: {
+				pendingOf: {
+					where: {id: friendId}
+			}
+		}});
 
+		if (await this.userService.isBlocked(id1, friendId) === 0)
+			throw new ForbiddenException();
+
+		if (isFriend && isFriend.pendingOf && isFriend?.pendingOf.length > 0)
+		{
+			const updatedUser = await this.userService.addFriend(id1, friendId);
+			await this.userService.addFriend(friendId, id1);
+
+			if(!isDef(updatedUser))
+				throw new NotFoundException();
+			return updatedUser;
+		}
+
+		const updatedUser = await this.userService.sendFriendRequest(id1, friendId);
+
+		if(!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
@@ -148,28 +161,27 @@ export class UserController {
 	@Post('/refuse-friend-request/:friendId')
 	async refuseFriendRequest(
 		@Req() req: AuthRequest,
-		@Param('friendId') friendId: string,
-	) {
+		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
-		const id2 = Number(friendId);
-		console.log(id2);
-		const updatedUser = await this.userService.refuseFriendRequest(id1, id2);
 
+		const updatedUser = await this.userService.refuseFriendRequest(id1, friendId);
+
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
 		return updatedUser;
 	}
 
 	@UseGuards(JwtAuthGuard)
 	@Get('/pending')
-	async getPending(@Req() req: AuthRequest) {
+	async getPending(@Req() req: AuthRequest): Promise<User[]> {
 		const uid = Number(req.user.userId)
 		const user = await prisma.user.findUnique({
 			where: { id: uid },
 			include: { pendingOf: true }
 		});
 
-		if (!user) {
-			throw new Error(`Utilisateur avec l'ID ${req.user.userId} non trouvé.`);
-		}
+		if (!isDef(user))
+			throw new NotFoundException();
 		return user.pendingOf;
 	}
 }
