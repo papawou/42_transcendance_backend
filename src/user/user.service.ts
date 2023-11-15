@@ -1,5 +1,5 @@
 import { isDef } from '@/technical/isDef';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotFoundError } from 'rxjs';
 import prisma from 'src/database/prismaClient';
 
@@ -18,7 +18,7 @@ export class UserService {
 
 	sendFriendRequest = async (id1: number, id2: number) => {
 		if (id1 === id2) {
-			throw new Error(`Utilisateur ${id1} ne peut pas ajouter l'utilisateur ${id2}`);
+			throw new ForbiddenException();
 		}
 
 		await prisma.$transaction([
