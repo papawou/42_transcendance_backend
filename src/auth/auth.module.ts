@@ -19,6 +19,7 @@ import { WsJwtStrategy } from './ws-jwt.strategy';
         })
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, WsJwtStrategy]
+    providers: [AuthService, JwtStrategy, WsJwtStrategy],
+    exports: [JwtModule]
 })
 export class AuthModule { }
