@@ -1,7 +1,6 @@
-import { GameEngine } from "../base/GameEngine";
-import { GameObject } from "../base/GameObject";
-import { BodyRigid } from "../base/physics/rigid/BodyRigid";
+import { BodyRigid } from "@/shared/pong/physics/rigid/BodyRigid";
 import { GameEngineServer } from "./GameEngineServer";
+import { GameObject } from "@/shared/pong/GameObject";
 
 export class GameObjectServer<T extends BodyRigid = BodyRigid> extends GameObject<T> {
     onTriggerEnter?: (source: GameObjectServer, target: GameObjectServer, ge: GameEngineServer) => void

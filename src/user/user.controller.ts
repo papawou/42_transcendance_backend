@@ -2,8 +2,7 @@ import { Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus,
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
-import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
-import { AuthRequest } from '@/auth/jwt.strategy';
+import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { User } from '@prisma/client';
 import { isDef } from '@/technical/isDef';
 
