@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Get, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { isDef } from "src/technical/isDef";
 import { AuthService } from "./auth.service";
 import { LoginDTO } from "./auth.dto";
@@ -14,5 +14,11 @@ export class AuthController {
             throw new UnauthorizedException();
         }
         return this.authService.login(user);
+    }
+
+    // auth/ft/callback
+    @Get('ft/callback')
+    handleFtCallback() {
+      return { msg: 'ft callback' };
     }
 }
