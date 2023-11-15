@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Post, Body } from '@nestjs/common';
+/*import { Controller, Get, UseGuards, Req, Post, Body } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import { TwoFactorService } from '../../user/two-factor.service';
 import { AuthGuard } from "@nestjs/passport";
@@ -20,14 +20,14 @@ export class AuthController {
 
   @Get('auth/ft/callback')
   @UseGuards(AuthGuard('ft'))
-  ftAuthRedirect(@Req() req) {
+  ftAuthRedirect(@Req() req: Request) {
     return this.authService.ftLogin(req);
   }
 
     // Endpoint to enable 2FA
     @Post('auth/2fa/enable')
     @UseGuards(AuthGuard('ft'))
-    async enable2FA(@Req() req) {
+    async enable2FA(@Req() req: Request) {
       // Call TwoFactorService to enable 2FA for the authenticated user
       const userId = req.user.id;
       const secret = await this.twoFactorService.enableTwoFactor(userId);
@@ -37,7 +37,7 @@ export class AuthController {
       // Endpoint to verify 2FA
     @Post('auth/2fa/verify')
     @UseGuards(AuthGuard('ft'))
-    async verify2FA(@Req() req, @Body() data: { token: string }) {
+    async verify2FA(@Req() req: Request, @Body() data: { token: string }) {
       // Call TwoFactorService to verify the 2FA code for the authenticated user
       const userId = req.user.id;
       const isVerified = await this.twoFactorService.verifyTwoFactor(userId, data.token);
@@ -51,7 +51,7 @@ export class AuthController {
 
     @Get('auth/2fa/generate-qr-code')
     @UseGuards(AuthGuard('ft'))
-    async generateQRCodeFor2FA(@Req() req) {
+    async generateQRCodeFor2FA(@Req() req: Request) {
       // Call TwoFactorService to generate the QR code for the authenticated user
       const userId = req.user.id;
       const qrCodeUrl = await this.twoFactorService.generateQRCodeUrlForUser(userId);
@@ -73,6 +73,7 @@ export class AuthController {
 
   @Get()
   @UseGuards(AuthGuard('ft'))
-  async ftAuth(@Req() req) {
+  async ftAuth(@Req() req: Request) {
   }
 }
+*/

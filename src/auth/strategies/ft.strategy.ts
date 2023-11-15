@@ -1,4 +1,4 @@
-import { PassportStrategy } from "@nestjs/passport";
+/*import { PassportStrategy } from "@nestjs/passport";
 
 import { Strategy } from "passport-42";
 
@@ -28,3 +28,4 @@ export class FtStrategy extends PassportStrategy(Strategy, 'ft') {
     }
 
 }
+*/

@@ -16,7 +16,7 @@ import { ConfigModule } from '@nestjs/config';
     })
   ],
   controllers: [AppController],
-  providers: [AppService, TwoFactorService],
+  providers: [AppService, /*TwoFactorService*/],
 })
 
 export class AppModule { }
