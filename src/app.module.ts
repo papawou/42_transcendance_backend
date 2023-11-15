@@ -5,6 +5,7 @@ import { UserModule } from './user/user.module';
 import { PrismaModule } from './database/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     ConfigModule.forRoot({
       isGlobal: true
-    })
+    }),
+    EventsModule
   ],
   controllers: [AppController],
   providers: [AppService, /*TwoFactorService*/],

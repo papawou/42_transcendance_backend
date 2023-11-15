@@ -2,10 +2,6 @@ import { Body, Controller, Post, Req, UnauthorizedException, UseGuards } from "@
 import { isDef } from "src/technical/isDef";
 import { AuthService } from "./auth.service";
 import { LoginDTO } from "./auth.dto";
-import { JwtAuthGuard } from "./jwt-auth.guard";
-import { AuthRequest } from "./jwt.strategy";
-
-
 
 @Controller('auth')
 export class AuthController {
