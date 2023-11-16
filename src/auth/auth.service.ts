@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import prisma from 'src/database/prismaClient';
 import { isDef } from 'src/technical/isDef';
+import * as otplib from 'otplib';
 
 @Injectable()
 export class AuthService {
@@ -25,5 +26,15 @@ export class AuthService {
         return {
             access_token: this.jwtService.sign(payload),
         };
+    }
+
+    async validateTwoFactorAuth(user: User, twoFactorCode: string): Promise<boolean> {
+        const secretKey = user.twoFactorSecret;
+        if (typeof secretKey === 'string') {
+            // Validate the provided 2FA code against the stored secret key using otplib
+            const isValid = otplib.authenticator.check(twoFactorCode, secretKey);
+            return isValid;
+        }
+        return false;
     }
 }

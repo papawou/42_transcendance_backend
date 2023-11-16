@@ -20,4 +20,7 @@ model User {
 
   pending   User[] @relation("pending")
   pendingOf User[] @relation("pending")
+
+  twoFactorSecret String?
+  twoFactorEnabled Boolean 
 }
