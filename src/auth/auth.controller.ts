@@ -7,6 +7,7 @@ import { Request } from 'express';
 import { HttpService } from "@nestjs/axios";
 import { URLSearchParams } from "url";
 import { ConfigModule } from "@nestjs/config";
+import prisma from "@/database/prismaClient";
 
 @Controller('auth')
 export class AuthController {
@@ -40,40 +41,49 @@ export class AuthController {
             ['redirect_uri', process.env.FT_REDIRECT_URI],
         ]);
 
-        const endpoint = "https://api.intra.42.fr/oauth/token?" + params.toString();
-        console.log({
-            where: 'prepost',
-        });
-        const resp = await lastValueFrom(this.httpService.post(endpoint).pipe(
+        // Exchange your code for an access token
+        const endpoint_post = "https://api.intra.42.fr/oauth/token?" + params.toString();
+        const post = await lastValueFrom(this.httpService.post(endpoint_post).pipe(
             map((resp) => {
-                // can read resp.data.access_token here
                 return resp.data;
             }),
         ));
 
-        // try to log access_token here
-        // then get user info
-        // then save user info in db
-        // then return user info
-        console.log({
-            where: 'auth.controller.ts@Post/ft/callback',
-            endpoint: endpoint,
-            access_token: resp.data.access_token, // keep resp.data.access_token in db
-        });
+        // Make API requests with your token
+        const get = await lastValueFrom(this.httpService.get('https://api.intra.42.fr/v2/me',{
+            headers: { Authorization: `Bearer ${post.access_token}`,},
+        }).pipe(
+            map((resp) => {
+                if (post.access_token) return resp.data;
+            }),
+        ));
 
-        // if (resp.data.access_token) {
-            // const resp2 = await lastValueFrom(this.httpService.get('https://api.intra.42.fr/v2/me',{
-            //     headers: { Authorization: `Bearer ${resp.data.access_token}`,},
-            // }).pipe(
-            //     map((resp) => {
-            //         console.log({
-            //             where: 'auth.controller.ts@Post/ft/callback',
-            //             user: resp.data,
-            //         });
-            //         return resp.data;
-            //     }),
-            // ));
-        // }
-        return resp.data;
+        // Save user in db
+        // || Check user in db + if tfa is enabled
+        const findUser = await prisma.user.findUnique({ where: { name: get.login } });
+        if ( findUser ) {
+            console.log(">>> user already in db");
+            await prisma.user.update({ // prevent duplicate
+                where: { name: get.login },
+                data: { 
+                    ft_id: '' + get.id,
+                    pic: get.image.link,
+            }, });
+            // MATT : TFA HERE
+            // if (hasEnabledTFA(get.login)) {
+            // then send email with tfa code
+            // then return tfa code
+            // }
+        } else {
+            console.log(">>> user not in db");
+            await prisma.user.create({ // save user info in db
+                data: { 
+                    name: get.login,
+                    ft_id: '' + get.id,
+                    pic: get.image.link,
+             }, });
+        }
+        // kenneth : TODO what about access_token and refresh_token and cookie?
+        return get;
     }
 }
