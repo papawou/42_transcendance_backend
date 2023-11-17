@@ -51,10 +51,8 @@ export class UserController {
 	@Get('/friends')
 	async getFriends(@Req() req: AuthRequest): Promise<User[]> {
 		const uid = Number(req.user.userId)
-		const user = await prisma.user.findUnique({
-			where: { id: uid },
-			include: { friends: true }
-		});
+
+		const user = await this.userService.getUser(uid);
 
 		if (!isDef(user))
 			throw new NotFoundException();
@@ -98,6 +96,20 @@ export class UserController {
 		@Param('blockedUserId', ParseIntPipe) blockedUserId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
 
+		if (id1 === blockedUserId)
+			throw new ForbiddenException();
+
+		const isPending = await this.userService.isPending(id1, blockedUserId);
+		const isPendingOf = await this.userService.isPending(blockedUserId, id1);
+		const isFriend = await this.userService.isFriend(id1, blockedUserId);
+
+		if (isPendingOf === 1)
+			await this.userService.refuseFriendRequest(blockedUserId, id1);
+		if (isPending === 1)
+			await this.userService.refuseFriendRequest(id1, blockedUserId);
+		if (isFriend === 1)
+			await this.userService.deleteFriend(id1, blockedUserId);
+
 		const updatedUser = await this.userService.blockUser(id1, blockedUserId);
 
 		if (!isDef(updatedUser))
@@ -109,7 +121,7 @@ export class UserController {
 	@Post('/unblock-user/:blockedUserId')
 	async unblockUser(
 		@Req() req: AuthRequest,
-		@Param('blockedUserId') blockedUserId: number): Promise<User> {
+		@Param('blockedUserId', ParseIntPipe) blockedUserId: number): Promise<User> {
 		const id1 = Number(req.user.userId);
 
 		const updatedUser = await this.userService.unblockUser(id1, blockedUserId);
@@ -137,7 +149,10 @@ export class UserController {
 			}
 		}});
 
-		if (await this.userService.isBlocked(id1, friendId) === 0)
+		const isBlocked = await this.userService.isBlocked(id1, friendId);
+		const isBlockedOf = await this.userService.isBlocked(friendId, id1);
+
+		if (isBlocked === 1 || isBlockedOf === 1)
 			throw new ForbiddenException();
 
 		if (isFriend && isFriend.pendingOf && isFriend?.pendingOf.length > 0)
