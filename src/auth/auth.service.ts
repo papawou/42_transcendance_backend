@@ -1,4 +1,5 @@
 import { UserJWTPayload } from '@/shared/shared';
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
@@ -7,7 +8,9 @@ import { isDef } from 'src/technical/isDef';
 
 @Injectable()
 export class AuthService {
-    constructor(private jwtService: JwtService) { }
+    constructor(
+        private jwtService: JwtService,
+        private readonly httpService: HttpService) { }
 
     async validateUser(name: string): Promise<User | null> {
         const user = await prisma.user.findFirst({
