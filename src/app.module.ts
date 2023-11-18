@@ -3,9 +3,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './database/prisma.module';
+import { PrismaService } from './database/prisma.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './events/events.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -15,7 +17,8 @@ import { EventsModule } from './events/events.module';
     ConfigModule.forRoot({
       isGlobal: true
     }),
-    EventsModule
+    EventsModule,
+    ChatModule
   ],
   controllers: [AppController],
   providers: [AppService],
