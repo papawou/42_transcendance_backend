@@ -2,6 +2,8 @@
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
+    "ft_id" TEXT NOT NULL DEFAULT 'couz',
+    "pic" TEXT NOT NULL DEFAULT 'https://cdn.intra.42.fr/doorkeeper/application/image/16985/Screen_Shot_2023-10-25_at_9.35.44_AM.png',
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );

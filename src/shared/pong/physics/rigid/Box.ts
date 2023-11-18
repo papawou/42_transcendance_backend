@@ -1,4 +1,4 @@
-import { Vector } from "@/pong/utils/Vector"
+import { Vector } from "../../utils/Vector"
 import { BodyBase, getBody } from "./BodyRigid"
 
 export type Box = {

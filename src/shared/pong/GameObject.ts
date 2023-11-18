@@ -1,4 +1,4 @@
-import { addVec, multVec } from "../utils/Vector";
+import { addVec, multVec } from "./utils/Vector";
 import { BodyRigid } from "./physics/rigid/BodyRigid";
 import { BodyBox } from "./physics/rigid/Box";
 import { BodyCircle } from "./physics/rigid/Circle";

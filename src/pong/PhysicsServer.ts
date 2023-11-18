@@ -1,8 +1,8 @@
 import { isDef } from "@/technical/isDef";
-import { Physics } from "../base/physics/Physics";
-import { CollisionManifold } from "../base/physics/collision";
 import { GameEngineServer } from "./GameEngineServer";
 import { GameObjectServer } from "./GameObjectServer";
+import { CollisionManifold } from "@/shared/pong/physics/collision";
+import { Physics } from "@/shared/pong/physics/Physics";
 
 export class PhysicsServer extends Physics<GameObjectServer> {
 

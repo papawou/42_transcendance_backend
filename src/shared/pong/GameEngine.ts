@@ -16,7 +16,7 @@ export class GameEngine<T extends GameObjectSide> {
     status: GameEngineStatus = "PENDING"
 
     //playerId, userId
-    players = new Map<string, Player | undefined>()
+    players = new Map<string, Player | undefined | null>()
     //playerId, barId
     playersBar = new Map<string, string>()
 
@@ -60,7 +60,7 @@ export class GameEngine<T extends GameObjectSide> {
         this.physics.loop(this)
     }
 
-    getPlayer(userId: string) {
+    getPlayer(userId: number) {
         for (const [playerId, player] of this.players) {
             if (player?.userId === userId) {
                 return { playerId, player, barId: this.playersBar.get(playerId) }
@@ -70,7 +70,7 @@ export class GameEngine<T extends GameObjectSide> {
     }
 
     //input
-    handleKeyDown(key: KeyboardEvent["key"], userId: string) {
+    handleKeyDown(key: KeyboardEvent["key"], userId: number) {
         const player = this.getPlayer(userId)
         if (!isDef(player) || !isDef(player.barId)) {
             return;
@@ -89,7 +89,7 @@ export class GameEngine<T extends GameObjectSide> {
         }
     }
 
-    handleKeyUp(key: KeyboardEvent["key"], userId: string) {
+    handleKeyUp(key: KeyboardEvent["key"], userId: number) {
         const player = this.getPlayer(userId)
         if (!isDef(player) || !isDef(player.barId)) {
             return;
@@ -129,7 +129,7 @@ export class GameEngine<T extends GameObjectSide> {
         return undefined;
     }
 
-    joinPlayer(userId: string): boolean {
+    joinPlayer(userId: number): boolean {
         if (isDef(this.getPlayer(userId))) {
             return true;
         }
@@ -141,7 +141,16 @@ export class GameEngine<T extends GameObjectSide> {
         return true;
     }
 
-    setReadyPlayer(userId: string): boolean {
+    leavePlayer(userId: number): boolean {
+        const player = this.getPlayer(userId);
+        if (!isDef(player)) {
+            return false;
+        }
+        this.players.set(player.playerId, null);
+        return true;
+    }
+
+    setReadyPlayer(userId: number): boolean {
         const player = this.getPlayer(userId);
         if (!isDef(player)) {
             return false;
@@ -152,6 +161,10 @@ export class GameEngine<T extends GameObjectSide> {
 
     isReady(): boolean {
         return Array.from(this.players.values()).every(p => p?.isReady ?? false)
+    }
+
+    isClosed(): boolean {
+        return Array.from(this.players.values()).some(p => p === null)
     }
 
     toData(): GameEngineData {
