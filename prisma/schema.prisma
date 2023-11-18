@@ -11,6 +11,8 @@ model User {
   id Int @id @default(autoincrement())
 
   name String @unique
+  ft_id String @default("couz")
+  pic String @default("https://cdn.intra.42.fr/doorkeeper/application/image/16985/Screen_Shot_2023-10-25_at_9.35.44_AM.png")
 
   friends   User[] @relation("friends")
   friendsOf User[] @relation("friends")

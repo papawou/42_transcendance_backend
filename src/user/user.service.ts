@@ -1,12 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { isDef } from '@/technical/isDef';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotFoundError } from 'rxjs';
 import prisma from 'src/database/prismaClient';
 
 @Injectable()
 export class UserService {
 
+
+	getUser = async (userId: number) => {
+		const user = await prisma.user.findUnique({
+			where: {id: userId},
+			include: {blocked: true, friends: true},
+		});
+
+		return user;
+	}
+
 	sendFriendRequest = async (id1: number, id2: number) => {
 		if (id1 === id2) {
-			throw new Error(`Utilisateur ${id1} ne peut pas ajouter l'utilisateur ${id2}`);
+			throw new ForbiddenException();
 		}
 
 		await prisma.$transaction([
@@ -31,8 +43,7 @@ export class UserService {
 	}
 
 	refuseFriendRequest = async (id1: number, id2: number) => {
-		console.log(id1);
-		console.log(id2);
+
 		await prisma.$transaction([
 			prisma.user.update({
 				where: { id: id1 },
@@ -159,12 +170,25 @@ export class UserService {
 
 		const isblocked = await prisma.user.findUnique({
 			where: { id: id1 },
-			select: { blocked: { where: { id: id2 } } }
+			include: {blockedOf: {where: {id: id2}}}
 		});
+		return isblocked?.blockedOf.length;
+	}
 
-		if (isblocked)
-			return true;
-		return false;
+	isPending = async (id1: number, id2: number) => {
+		const isPending = await prisma.user.findUnique({
+			where: {id: id1},
+			include: {pendingOf: {where: {id: id2}}}
+		});
+		return isPending?.pendingOf.length;
+	}
+
+	isFriend = async (id1: number, id2: number) => {
+		const isFriend = await prisma.user.findUnique({
+			where: {id: id1},
+			include: {friends: {where: {id: id2}}}
+		});
+		return isFriend?.friends.length;
 	}
 
 	changeUsername = async (id: number, newName: string) => {
@@ -172,7 +196,7 @@ export class UserService {
 		console.log(newName);
 		const updatedUser = await prisma.user.update({
 			where: { id: id },
-			data: { 
+			data: {
 				name: newName,
 			},
 		});
