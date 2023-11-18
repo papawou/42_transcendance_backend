@@ -6,12 +6,15 @@ import {
 	ConnectedSocket,
 	OnGatewayConnection,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { ChatService, MessageDto, RoomDto, RoomReturnDto, UserDto } from './chat.service';
 import { Inject } from '@nestjs/common';
 import { comparePwd } from 'src/password/bcrypt';
 import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
 import { UseGuards } from "@nestjs/common";
+import { AuthSocket, WSAuthMiddleware } from '@/events/auth-socket.middleware';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
 	cors: {
@@ -24,9 +27,16 @@ export class ChatGateway implements OnGatewayConnection {
 	@WebSocketServer()
 	server!: Server;
 
-	constructor(@Inject(ChatService) private chatService: ChatService) { }
+	constructor(@Inject(ChatService) private chatService: ChatService, 
+		private jwtService: JwtService, private configService: ConfigService) { }
 
-	async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+	afterInit(server: Server) {
+		const middle = WSAuthMiddleware(this.jwtService, this.configService);
+		server.use(middle)
+	}
+
+	@SubscribeMessage('connection')
+	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
 		this.chatService.createUser(client); //testing USER
 		this.chatService.addSocketToRooms(client);
 	}
@@ -35,7 +45,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('createRoom')
-	async createRoom(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, password: string }) {
+	async createRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string }) {
 
 		if (this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'Room name already taken' });
@@ -59,7 +69,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('joinRoom')
-	async joinRoom(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, password: string }) {
+	async joinRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room does not exist.' });
 			return;
@@ -100,7 +110,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('roomMessage')
-	async roomMessage(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, message: string }) {
+	async roomMessage(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, message: string }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -124,7 +134,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('newPrivateMessage')
-	async privateMessage(@ConnectedSocket() socket: Socket, @MessageBody() body: { userId: number, message: string }) {
+	async privateMessage(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { userId: number, message: string }) {
 		const sender: UserDto | null = await this.chatService.getUserFromId(socket.user.userId);
 		const receiver: UserDto | null = await this.chatService.getUserFromId(body.userId);
 		if (!sender || !receiver)
@@ -139,15 +149,16 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('sendPM')
-	async newPMRoom(@ConnectedSocket() socket: Socket, @MessageBody() body: { userId: number }) {
+	async newPMRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { userId: number }) {
 		const sender: UserDto | null = await this.chatService.getUserFromId(socket.user.userId);
 		const receiver: UserDto | null = await this.chatService.getUserFromId(body.userId);
 		if (!sender || !receiver)
 			return;
 
 
-		if (socket.user.id === body.userId) {
+		if (socket.user.userId === body.userId) {
 			this.server.to(socket.id).emit('chatNotif', { notif: "You can't PM yourself." });
+			return ;
 		}
 
 		this.chatService.addToPmList(sender, receiver);
@@ -161,7 +172,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('leaveRoom')
-	async leaveCurrentRoom(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string }) {
+	async leaveCurrentRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -191,7 +202,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('changePassword')
-	async changePassword(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, password: string }) {
+	async changePassword(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -216,7 +227,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('kickUser')
-	async kickUser(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, userId: number }) {
+	async kickUser(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, userId: number }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -257,7 +268,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('setAdmin')
-	async setAdmin(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, userId: number }) {
+	async setAdmin(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, userId: number }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -291,7 +302,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('unsetAdmin')
-	async unsetAdmin(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, userId: number }) {
+	async unsetAdmin(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, userId: number }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -317,7 +328,9 @@ export class ChatGateway implements OnGatewayConnection {
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(roomDto);
 		this.server.to('user_' + body.userId).to('user_' + userDto.id).emit('roomChanged', { newRoom: roomReturn });
 
-		const newAdmin: UserDto = await this.chatService.getUserFromId(body.userId);
+		const newAdmin: UserDto | null = await this.chatService.getUserFromId(body.userId);
+		if (!newAdmin)
+			return ;
 		this.server.to(socket.id).emit('chatNotif', { notif: `${newAdmin.name} is no longer admin!` });
 	};
 
@@ -325,7 +338,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('banUser')
-	async banUser(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, userId: number, time: number }) {
+	async banUser(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, userId: number, time: number }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
@@ -364,7 +377,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('muteUser')
-	async muteUser(@ConnectedSocket() socket: Socket, @MessageBody() body: { roomName: string, userId: number, time: number }) {
+	async muteUser(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, userId: number, time: number }) {
 		if (!this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;

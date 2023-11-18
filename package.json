@@ -38,6 +38,7 @@
   "devDependencies": {
     "@nestjs/cli": "^10.1.18",
     "@nestjs/swagger": "^7.1.15",
+    "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.6.5",
     "@types/passport-jwt": "^3.0.13",
     "@types/passport-local": "^1.0.38",

@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { hashPwd } from 'src/password/bcrypt';
 import { Socket } from 'socket.io';
 import { UserService } from 'src/user/user.service';
-import prisma from 'src/database/prismaClient';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import { AuthSocket } from '@/events/auth-socket.middleware';
 
 export interface UserDto {
 	id: number;
@@ -331,7 +331,7 @@ export class ChatService {
 		return userDto;
 	}
 
-	async addSocketToRooms(socket: Socket) {
+	async addSocketToRooms(socket: AuthSocket) {
 		const userDto: UserDto | null = await this.getUserFromId(socket.user.userId); //auth?
 		if (!userDto) {
 			return;
@@ -344,13 +344,14 @@ export class ChatService {
 	}
 
 	//TEST USER
-	async createUser(socket: Socket) {
+	async createUser(socket: AuthSocket) {
 
 		if (this.UserSockets.has(socket.user.userId)) {
 			return;
 		}
 
 		this.UserSockets.set(socket.user.userId, [socket]);
+		console.log("app")
 		socket.join('user_' + socket.user.userId.toString());
 	}
 
