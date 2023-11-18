@@ -6,6 +6,7 @@ import { User } from '@prisma/client';
 import prisma from 'src/database/prismaClient';
 import { isDef } from 'src/technical/isDef';
 import * as otplib from 'otplib';
+import speakeasy from 'speakeasy';
 
 @Injectable()
 export class AuthService {
@@ -31,13 +32,37 @@ export class AuthService {
         };
     }
 
-    async validateTwoFactorAuth(user: User, twoFactorCode: string): Promise<boolean> {
-        const secretKey = user.twoFactorSecret;
-        if (typeof secretKey === 'string') {
-            // Validate the provided 2FA code against the stored secret key using otplib
-            const isValid = otplib.authenticator.check(twoFactorCode, secretKey);
-            return isValid;
-        }
-        return false;
+
+    async enableTwoFactorAuth(user: User) {
+        const secret = speakeasy.generateSecret({
+          length: 20,
+          name: 'YourApp', // Replace with your app name
+        });
+    
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { twoFactorSecret: secret.base32 },
+        });
+    
+        return secret;
+      }
+
+      async disableTwoFactorAuth(user: User) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { twoFactorSecret: null },
+        });
+    
+        return '2FA has been disabled';
+      }
+    
+      async validateTwoFactorCode(user: User, twoFactorCode: string) {
+        const isValid = speakeasy.totp.verify({
+          secret: user.twoFactorSecret!,
+          encoding: 'base32',
+          token: twoFactorCode,
+          window: 1,
+        });
+        return isValid;
+      }
     }
-}

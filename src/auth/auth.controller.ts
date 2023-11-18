@@ -8,7 +8,9 @@ import { HttpService } from "@nestjs/axios";
 import { URLSearchParams } from "url";
 import { ConfigModule } from "@nestjs/config";
 import prisma from "@/database/prismaClient";
-import { Request } from 'express';
+import speakeasy from "speakeasy";
+import QRCode from "qrcode";
+import { JwtTwoFactAuthGuard } from './jwt-2fa.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -29,13 +31,39 @@ export class AuthController {
         return this.authService.login(user);
     }
 
+    @UseGuards(JwtTwoFactAuthGuard)
+    @Post('enable-2fa')
+    async enableTwoFactorAuth(@Req() req: Request): Promise<any> {
+      const user = await this.authService.validateUser(req.body.name);
+  
+      if (!isDef(user)) {
+        return { message: 'User not found or unauthorized' };
+      }
+  
+      const secret = await this.authService.enableTwoFactorAuth(user);
+      return { secret };
+    }
+    
+    @UseGuards(JwtTwoFactAuthGuard)
+    @Post('disable-2fa')
+    async disableTwoFactorAuth(@Req() req: Request): Promise<any> {
+      const user  = await this.authService.validateUser(req.body.name);
+  
+      if (!isDef(user)) {
+        return { message: 'User not found or unauthorized' };
+      }
+  
+      const result = await this.authService.disableTwoFactorAuth(user);
+      return { message: result };
+    }
+
     @Post('2fa')
     async verifyTwoFactorAuth(@Body() body: TwoFactorAuthDTO, @Req() req: Request) {
         const user = await this.authService.validateUser(body.name);
         if (!isDef(user) || !user.twoFactorEnabled) {
             throw new UnauthorizedException();
         }
-        const isValid = await this.authService.validateTwoFactorAuth(user, body.twoFactorCode);
+        const isValid = await this.authService.validateTwoFactorCode(user, body.twoFactorCode);
         if (!isValid) {
             throw new UnauthorizedException();
         }
@@ -87,11 +115,23 @@ export class AuthController {
                     ft_id: '' + get.id,
                     pic: get.image.link,
             }, });
-            // MATT : TFA HERE
-            // if (hasEnabledTFA(get.login)) {
-            // then send email with tfa code
-            // then return tfa code
-            // }
+            if (findUser.twoFactorEnabled) {
+                // Generate 2FA token
+                const token = speakeasy.totp({
+                    secret: findUser.twoFactorSecret!,
+                    encoding: 'base32',
+                });
+
+                // Generate QR Code URL for 2FA
+                const otpauthURL = speakeasy.otpauthURL({
+                    secret: findUser.twoFactorSecret!,
+                    label: `${findUser.name}@transcendence`,
+                    issuer: 'transcendence',
+                });
+                const qrCodeUrl = await QRCode.toDataURL(otpauthURL);
+                // Return necessary data or response
+                return { qrCodeUrl, token };
+            }
         } else {
             console.log(">>> user not in db");
             await prisma.user.create({ // save user info in db
