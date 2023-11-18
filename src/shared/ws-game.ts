@@ -1,17 +1,28 @@
 import { GameEngineData } from "./pong/pong"
+import { UserGame } from "./shared"
 
 export enum WsGame {
+    //in client -> server
     joinRoom = "joinRoomGame",
     leaveRoom = "leaveRoomGame",
     sendKey = "sendKeyGame",
     setReady = "setReadyGame",
-    update = "updateGame",
+    search = "searchGame",
+
+    //out server -> client
     close = "closeGame",
-    search = "searchGame"
+    duelStart = "duelStart",
+
+    //meta in trigger out
+    metaGetUser = "metaGetUserGame",
+    metaGetGame = "metaGetGameGame",
+
+    //debug
+    debug = "debugGame"
 }
 
 export interface WsGameRoom {
-    roomId: string
+    gameId: string
 }
 
 export interface WsGameJoinRoom extends WsGameRoom { }
@@ -20,12 +31,18 @@ export interface WsGameSendKey extends WsGameRoom {
     key: string,
     isUp: boolean
 }
+
 export interface WsGameSetReady extends WsGameRoom { }
+
+export interface WsGameDebug {
+    userId?: string
+    gameId?: string
+}
 
 export type WsGameEvents = {
     [WsGame.joinRoom]: {
         in: WsGameJoinRoom,
-        out: GameEngineData | WS_NULL
+        out: true | false
     },
     [WsGame.leaveRoom]: {
         in: WsGameLeaveRoom,
@@ -37,21 +54,34 @@ export type WsGameEvents = {
     },
     [WsGame.setReady]: {
         in: WsGameSetReady,
-        out: GameEngineData | WS_NULL
+        out: true | WS_NULL
     },
-
-    //out
-    [WsGame.update]: {
+    [WsGame.search]: {
         in: undefined,
-        out: GameEngineData
-    },
+        out: true | false
+    },    
+    //out
     [WsGame.close]: {
         in: undefined,
         out: undefined
     },
-    [WsGame.search]: {
+    [WsGame.duelStart]: {
         in: undefined,
-        out: true | WS_NULL
+        out: string //gameId
+    }
+
+    //meta
+    [WsGame.metaGetUser]: {
+        in: undefined,
+        out: UserGame | WS_NULL
+    },
+    [WsGame.metaGetGame]: {
+        in?: string, //gameId
+        out: GameEngineData | WS_NULL
+    },
+    [WsGame.debug]: {
+        in?: { userId?: number, gameId?: string },
+        out: null
     }
 }
 

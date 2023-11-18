@@ -9,8 +9,8 @@ export class UserService {
 
 	getUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
-			where: {id: userId},
-			include: {blocked: true, friends: true, matchHistory: true},
+			where: { id: userId },
+			include: { blocked: true, friends: true },
 		});
 
 		return user;
@@ -170,23 +170,23 @@ export class UserService {
 
 		const isblocked = await prisma.user.findUnique({
 			where: { id: id1 },
-			include: {blockedOf: {where: {id: id2}}}
+			include: { blockedOf: { where: { id: id2 } } }
 		});
 		return isblocked?.blockedOf.length;
 	}
 
 	isPending = async (id1: number, id2: number) => {
 		const isPending = await prisma.user.findUnique({
-			where: {id: id1},
-			include: {pendingOf: {where: {id: id2}}}
+			where: { id: id1 },
+			include: { pendingOf: { where: { id: id2 } } }
 		});
 		return isPending?.pendingOf.length;
 	}
 
 	isFriend = async (id1: number, id2: number) => {
 		const isFriend = await prisma.user.findUnique({
-			where: {id: id1},
-			include: {friends: {where: {id: id2}}}
+			where: { id: id1 },
+			include: { friends: { where: { id: id2 } } }
 		});
 		return isFriend?.friends.length;
 	}
@@ -203,10 +203,10 @@ export class UserService {
 		return updatedUser;
 	}
 
-	changeAvatar = async(userId: number, image: string) =>  {
+	changeAvatar = async (userId: number, image: string) => {
 
 		const updatedUser = await prisma.user.update({
-			where: {id: userId},
+			where: { id: userId },
 			data: {
 				pic: image,
 			}

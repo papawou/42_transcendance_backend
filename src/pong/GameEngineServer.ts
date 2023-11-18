@@ -13,11 +13,11 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
     triggerCallbacks: Array<() => void> = [];
     postLoopCb?: () => void;
 
-    constructor(roomId: string, width: number, height: number, scene: Scene<GameObjectServer>, physics: PhysicsServer) {
-        super(roomId, width, height, scene, physics);
+    constructor(gameId: string, width: number, height: number, scene: Scene<GameObjectServer>, physics: PhysicsServer) {
+        super(gameId, width, height, scene, physics);
 
         this.players.set("left", undefined)
-        // this.players.set("right", undefined)
+        this.players.set("right", undefined)
         this.playersBar.set("left", "leftBar")
         this.playersBar.set("right", "rightBar")
 
@@ -111,16 +111,6 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
         this.sc.addObj(ball);
     }
 
-    stop() {
-        super.stop()
-        this.postLoopCb = undefined;
-    }
-
-    reset(cb?: GameEngineServer["postLoopCb"]) {
-        this.stop()
-        this.start(cb)
-    }
-
     registerColliding(source: GameObjectServer, target: GameObjectServer) {
         if (source.registerTriggerEnter(target)) {
             if (isDef(source.onTriggerEnter)) {
@@ -129,9 +119,16 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
         }
     }
 
+    callCb(cb: () => void) {
+        if (this.status === "CLOSED") {
+            return;
+        }
+        cb()
+    }
+
     loop() {
         super.loop()
-        this.triggerCallbacks.forEach(cb => cb())
+        this.triggerCallbacks.forEach(cb => this.callCb(cb))
         this.triggerCallbacks = []
         this.sc.objs.forEach(o => o.cleanTriggersEnter())
         this.postLoopCb?.();
