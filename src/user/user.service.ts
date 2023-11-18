@@ -10,7 +10,7 @@ export class UserService {
 	getUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
 			where: {id: userId},
-			include: {blocked: true, friends: true},
+			include: {blocked: true, friends: true, matchHistory: true},
 		});
 
 		return user;
