@@ -1,28 +1,47 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DB_URL")
+    provider = "postgresql"
+    url      = env("DB_URL")
 }
 
 model User {
   id Int @id @default(autoincrement())
-
   name String @unique
   ft_id String @default("couz")
   pic String @default("https://cdn.intra.42.fr/doorkeeper/application/image/16985/Screen_Shot_2023-10-25_at_9.35.44_AM.png")
 
-  friends   User[] @relation("friends")
-  friendsOf User[] @relation("friends")
+    wins  Int @default(0)
+    loses Int @default(0)
+    rank  Int @default(0)
 
-  blocked   User[] @relation("blocked")
-  blockedOf User[] @relation("blocked")
+    friends   User[] @relation("friends")
+    friendsOf User[] @relation("friends")
 
-  pending   User[] @relation("pending")
-  pendingOf User[] @relation("pending")
+    blocked   User[] @relation("blocked")
+    blockedOf User[] @relation("blocked")
 
-  twoFactorSecret String?
-  twoFactorEnabled Boolean @default(false) 
+    pending   User[] @relation("pending")
+    pendingOf User[] @relation("pending")
+
+	matchHistory	Game[]
+}
+
+model Game {
+    id		Int @id @default(autoincrement())
+    
+	type	String?
+
+	player1Score	Int
+	player2Score	Int
+
+    player     User    @relation(fields: [player1Id], references: [id])
+    
+	player1Id   Int
+	player2Id	Int
+
+    player1Name String
+    player2Name String
 }
