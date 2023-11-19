@@ -1,12 +1,12 @@
 import { isDef } from "@/technical/isDef";
-import { GameEngine } from "../base/GameEngine";
-import Scene from "../base/Scene";
-import { getBodyLine } from "../base/physics/rigid/Line";
 import { GameObjectServer } from "./GameObjectServer";
 import { PhysicsServer } from "./PhysicsServer";
-import { getBodyCircle } from "../base/physics/rigid/Circle";
-import { getBodyBox } from "../base/physics/rigid/Box";
 import { getRandomBool } from "@/technical/randFunc";
+import { GameEngine } from "@/shared/pong/GameEngine";
+import Scene from "@/shared/pong/Scene";
+import { getBodyLine } from "@/shared/pong/physics/rigid/Line";
+import { getBodyBox } from "@/shared/pong/physics/rigid/Box";
+import { getBodyCircle } from "@/shared/pong/physics/rigid/Circle";
 
 export class GameEngineServer extends GameEngine<GameObjectServer> {
 

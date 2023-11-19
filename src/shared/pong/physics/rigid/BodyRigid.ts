@@ -1,7 +1,7 @@
 import { BodyCircle } from "./Circle"
 import { BodyBox } from "./Box"
 import { BodyLine } from "./Line"
-import { Vector, getVec } from "@/pong/utils/Vector"
+import { Vector, getVec } from "@/shared/pong/utils/Vector"
 
 type Shape = "circle" | "box" | "line"
 

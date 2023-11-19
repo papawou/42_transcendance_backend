@@ -1,10 +1,10 @@
 import { PlayerData } from "./pong"
 export class Player {
-	userId: string
+	userId: number
 	score: number
 	isReady: boolean
 
-	constructor(userId: string, score: number = 0, isReady: boolean = false) {
+	constructor(userId: number, score: number = 0, isReady: boolean = false) {
 		this.userId = userId
 		this.score = score
 		this.isReady = isReady

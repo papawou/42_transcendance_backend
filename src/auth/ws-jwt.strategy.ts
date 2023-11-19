@@ -6,6 +6,7 @@ import { isDef } from 'src/technical/isDef';
 import { ConfigService } from '@nestjs/config';
 import { UserJWTPayload } from '@/shared/shared';
 import { WsException } from '@nestjs/websockets';
+import { jwtValidate } from './utils';
 
 export type UserJWT = {
     userId: number,
@@ -27,10 +28,10 @@ export class WsJwtStrategy extends PassportStrategy(Strategy, 'wsjwt') {
     }
 
     async validate(payload: UserJWTPayload | undefined): Promise<UserJWT> {
-        console.log("validate")
-        if (!isDef(payload)) {
+        const tmp = jwtValidate(payload)
+        if (!isDef(tmp)) {
             throw new WsException("unauthorized")
         }
-        return { userId: payload.sub, name: payload.name };
+        return tmp;
     }
 }

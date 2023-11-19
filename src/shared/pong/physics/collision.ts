@@ -1,10 +1,9 @@
-
 import { isDef } from "@/technical/isDef";
 import { BodyCircle } from "./rigid/Circle";
-import { Vector, addVec, clampVec, dotVec, invVec, magnVec, multVec, normVec, subVec } from "@/pong/utils/Vector";
 import { BodyBox } from "./rigid/Box";
 import { BodyLine } from "./rigid/Line";
 import { GameObject, isGameObjectBox, isGameObjectCircle, isGameObjectLine } from "../GameObject";
+import { Vector, addVec, clampVec, dotVec, invVec, magnVec, multVec, normVec, subVec } from "../utils/Vector";
 
 export type CollisionManifold<T extends GameObject = GameObject> = {
     bodyA: T,

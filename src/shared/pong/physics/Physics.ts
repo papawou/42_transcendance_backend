@@ -1,4 +1,4 @@
-import { interVec } from "../../utils/Vector";
+import { interVec } from "../utils/Vector";
 import { GameEngine } from "../GameEngine";
 import { GameObject } from "../GameObject";
 import { CollisionManifold, collisionDetection, collisionResolve } from "./collision";

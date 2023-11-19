@@ -6,7 +6,7 @@ export type PlayerData = {
     playerId: string,
     barId?: string,
     user?: {
-        userId: string,
+        userId: number,
         score: number,
         isReady: boolean
     },
