@@ -28,6 +28,7 @@ export interface RoomDto {
 	users: Array<UserDto>;
 	messages: Array<MessageDto>;
 	password: string;
+	privacyPublic: boolean,
 	mutedMap: Map<number, number>;
 	banMap: Map<number, number>;
 };
@@ -60,13 +61,14 @@ export class ChatService {
 	/*********************** CREATE ROOM  ************************/
 
 
-	async createRoom(roomName: string, password: string, userDto: UserDto): Promise<RoomDto> {
+	async createRoom(roomName: string, password: string, privacyPublic: boolean, userDto: UserDto): Promise<RoomDto> {
 		const roomDto: RoomDto = {
 			roomName: roomName,
 			owner: userDto.id,
 			admins: [userDto.id],
 			users: [],
 			messages: [],
+			privacyPublic: privacyPublic ? true : false,
 			password: password && password !== '' ? await hashPwd(password) : password,
 			mutedMap: new Map(),
 			banMap: new Map(),
@@ -261,9 +263,14 @@ export class ChatService {
 		return userRooms;
 	}
 
-	getAllRoomNames(): string[] {
+	getAllPublicRooms(): string[] {
 		const roomNames = new Array<string>;
-		this.RoomList.forEach(element => roomNames.push(element.roomName));
+
+		this.RoomList.forEach(element => {
+			if (element.privacyPublic) {
+				roomNames.push(element.roomName);
+			}
+		})
 		return roomNames;
 	}
 
@@ -301,6 +308,10 @@ export class ChatService {
 			return false;
 		}
 		return true;
+	}
+
+	isUserIdInRoom(userId: number, roomDto: RoomDto): boolean {
+		return roomDto.users.some(user => user.id === userId);
 	}
 
 	roomExist(roomName: string): boolean {
@@ -349,9 +360,7 @@ export class ChatService {
 		if (this.UserSockets.has(socket.user.userId)) {
 			return;
 		}
-
 		this.UserSockets.set(socket.user.userId, [socket]);
-		console.log("app")
 		socket.join('user_' + socket.user.userId.toString());
 	}
 
