@@ -1,20 +1,17 @@
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy, ExtractJwt } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { isDef } from 'src/technical/isDef';
+import { UserService } from 'src/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { UserJWTPayload } from '@/shared/shared';
 import { jwtValidate } from './utils';
-
-export type UserJWT = {
-    userId: number,
-    name: string,
-    twoFactAuth?: boolean
-}
+import { UserJWT } from './jwt.strategy';
+import { isDef } from 'src/technical/isDef';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(private configService: ConfigService) {
+export class JwtTwoFactAuthStrategy extends PassportStrategy(Strategy, 'jwt-2fa') {
+    constructor(private readonly userService: UserService,
+        configService: ConfigService) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
@@ -22,13 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: UserJWTPayload | undefined): Promise<UserJWT | undefined> {
+    async validate(payload: UserJWTPayload | undefined): Promise<UserJWT> {
         const tmp = jwtValidate(payload);
         if (!isDef(tmp)) {
             throw new UnauthorizedException()
         }
-        if (tmp.twoFactAuth && payload?.isTwoFactAuth) {
-            return tmp;
-        }
+        return tmp
     }
 }

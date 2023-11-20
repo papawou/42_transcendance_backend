@@ -2,10 +2,10 @@ import { isDef } from '@/technical/isDef';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotFoundError } from 'rxjs';
 import prisma from 'src/database/prismaClient';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
-
 
 	getUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
@@ -203,4 +203,45 @@ export class UserService {
 
 		return updatedUser;
 	}
+
+	findOneById = async(id: number) => {
+		const user = await prisma.user.findUnique({
+		  where: { id },
+		});
+	
+		if (!user) {
+		  throw new NotFoundException(`User with ID ${id} not found`);
+		}
+	
+		return user;
+	  }
+
+	updateSecret = async (id: number, secret: string): Promise<void> => {
+		await prisma.user.update({
+		  where: { id },
+		  data: { twoFactorSecret: secret },
+		});
+	  }
+
+	  getSecret = async (id: number): Promise<string | null> => {
+		const user = await prisma.user.findUnique({
+		  where: { id },
+		  select: { twoFactorSecret: true },
+		});
+		return user?.twoFactorSecret ?? null;
+	  }
+	
+	  turnOnTfa = async(id: number): Promise<void> => {
+		await prisma.user.update({
+		  where: { id },
+		  data: { twoFactorAuth: true },
+		});
+	  }
+	
+	  turnOffTfa = async(id: number): Promise<void> => {
+		await prisma.user.update({
+		  where: { id },
+		  data: { twoFactorAuth: false },
+		});
+	  }
 }

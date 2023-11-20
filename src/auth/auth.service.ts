@@ -5,14 +5,18 @@ import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import prisma from 'src/database/prismaClient';
 import { isDef } from 'src/technical/isDef';
-import * as otplib from 'otplib';
-import speakeasy from 'speakeasy';
+import { authenticator } from 'otplib';
+import { toFileStream } from 'qrcode';
+import { UserService } from 'src/user/user.service';
+import { Writable } from 'stream';
 
 @Injectable()
 export class AuthService {
     constructor(
         private jwtService: JwtService,
-        private readonly httpService: HttpService) { }
+        private readonly httpService: HttpService,
+        private userService: UserService)
+        { }
 
     async validateUser(name: string): Promise<User | null> {
         const user = await prisma.user.findFirst({
@@ -32,37 +36,35 @@ export class AuthService {
         };
     }
 
-
-    async enableTwoFactorAuth(user: User) {
-        const secret = speakeasy.generateSecret({
-          length: 20,
-          name: 'YourApp', // Replace with your app name
-        });
-    
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { twoFactorSecret: secret.base32 },
-        });
-    
-        return secret;
-      }
-
-      async disableTwoFactorAuth(user: User) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { twoFactorSecret: null },
-        });
-    
-        return '2FA has been disabled';
+    async generateToken(payload: any, options: any = {}) {
+        return this.jwtService.sign(payload, options);
       }
     
-      async validateTwoFactorCode(user: User, twoFactorCode: string) {
-        const isValid = speakeasy.totp.verify({
-          secret: user.twoFactorSecret!,
-          encoding: 'base32',
-          token: twoFactorCode,
-          window: 1,
-        });
-        return isValid;
+      //  Generate a secret and an url
+      async generateTwoFactAuthSecret(user: any): Promise<any> {
+        const secret = authenticator.generateSecret();
+        await this.userService.updateSecret(user.id, secret);
+    
+        const otpauthUrl = authenticator.keyuri(user.id.toString(), 'ft_transcendence', secret);
+    
+        return otpauthUrl;
       }
-    }
+    
+      //  Url to qr code
+      async pipeQrCodeStream(stream: Writable, otpauthUrl: string) {
+        return toFileStream(stream, otpauthUrl);
+      }
+    
+      //  Verify qr code scan
+      async verifyTwoFactAuth(code: string, user: any) {
+        const secret = await this.userService.getSecret(user.id);
+        if (secret) {
+          return authenticator.verify({ token: code, secret });
+        }
+        return false;
+      }
+    
+      async turnOnTfa(user: any) {
+        await this.userService.turnOnTfa(user.id);
+      }
+}

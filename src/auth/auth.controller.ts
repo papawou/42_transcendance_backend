@@ -1,16 +1,17 @@
-import { Body, Controller, Post, Get, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Get, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { isDef } from "src/technical/isDef";
 import { AuthService } from "./auth.service";
-import { LoginDTO, TwoFactorAuthDTO } from "./auth.dto";
+import { LoginDTO } from "./auth.dto";
 import { from, lastValueFrom, map } from "rxjs";
 import { Request } from 'express';
 import { HttpService } from "@nestjs/axios";
 import { URLSearchParams } from "url";
 import { ConfigModule } from "@nestjs/config";
 import prisma from "@/database/prismaClient";
-import speakeasy from "speakeasy";
-import QRCode from "qrcode";
 import { JwtTwoFactAuthGuard } from './jwt-2fa.guard';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { Writable } from 'stream';
+import { TwoFactorAuthDTO } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -19,52 +20,9 @@ export class AuthController {
         private httpService: HttpService) { }
 
     @Post('login')
-    async login(@Body() body: LoginDTO, @Req() req: Request) {
+    async login(@Body() body: LoginDTO) {
         const user = await this.authService.validateUser(body.name);
         if (!isDef(user)) {
-            throw new UnauthorizedException();
-        }
-        if (user.twoFactorEnabled) {
-            req.session.tempUser = user; 
-            return { challenge: true };
-        }
-        return this.authService.login(user);
-    }
-
-    @UseGuards(JwtTwoFactAuthGuard)
-    @Post('enable-2fa')
-    async enableTwoFactorAuth(@Req() req: Request): Promise<any> {
-      const user = await this.authService.validateUser(req.body.name);
-  
-      if (!isDef(user)) {
-        return { message: 'User not found or unauthorized' };
-      }
-  
-      const secret = await this.authService.enableTwoFactorAuth(user);
-      return { secret };
-    }
-    
-    @UseGuards(JwtTwoFactAuthGuard)
-    @Post('disable-2fa')
-    async disableTwoFactorAuth(@Req() req: Request): Promise<any> {
-      const user  = await this.authService.validateUser(req.body.name);
-  
-      if (!isDef(user)) {
-        return { message: 'User not found or unauthorized' };
-      }
-  
-      const result = await this.authService.disableTwoFactorAuth(user);
-      return { message: result };
-    }
-
-    @Post('2fa')
-    async verifyTwoFactorAuth(@Body() body: TwoFactorAuthDTO, @Req() req: Request) {
-        const user = await this.authService.validateUser(body.name);
-        if (!isDef(user) || !user.twoFactorEnabled) {
-            throw new UnauthorizedException();
-        }
-        const isValid = await this.authService.validateTwoFactorCode(user, body.twoFactorCode);
-        if (!isValid) {
             throw new UnauthorizedException();
         }
         return this.authService.login(user);
@@ -115,23 +73,11 @@ export class AuthController {
                     ft_id: '' + get.id,
                     pic: get.image.link,
             }, });
-            if (findUser.twoFactorEnabled) {
-                // Generate 2FA token
-                const token = speakeasy.totp({
-                    secret: findUser.twoFactorSecret!,
-                    encoding: 'base32',
-                });
-
-                // Generate QR Code URL for 2FA
-                const otpauthURL = speakeasy.otpauthURL({
-                    secret: findUser.twoFactorSecret!,
-                    label: `${findUser.name}@transcendence`,
-                    issuer: 'transcendence',
-                });
-                const qrCodeUrl = await QRCode.toDataURL(otpauthURL);
-                // Return necessary data or response
-                return { qrCodeUrl, token };
-            }
+            // MATT : TFA HERE
+            // if (hasEnabledTFA(get.login)) {
+            // then send email with tfa code
+            // then return tfa code
+            // }
         } else {
             console.log(">>> user not in db");
             await prisma.user.create({ // save user info in db
@@ -143,5 +89,45 @@ export class AuthController {
         }
         // kenneth : TODO what about access_token and refresh_token and cookie?
         return get;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('2fa/generate')
+    async generate(@Req() req: Request, @Res() res: Writable) {
+      //  Generate a new token // To change so it can verify if the setup is ok
+      const user: any = req.user;
+      //  Generate the secret for the user and the qrCode
+      const otpauthUrl = await this.authService.generateTwoFactAuthSecret(user);
+      const qrCode = await this.authService.pipeQrCodeStream(res, otpauthUrl);
+      return qrCode;
+    }
+    
+    // Qr code auth verification
+    @UseGuards(JwtTwoFactAuthGuard)
+    @Post('2fa/validate')
+    async verifyTwoFactAuth(
+      @Req() req: Request, 
+      @Body() body: TwoFactorAuthDTO,
+      @Res({ passthrough: true }) res: Response
+      ) {
+      const user: any = req.user;
+      const isCodeValid = await this.authService.verifyTwoFactAuth(body.code, user);
+
+      if (!isCodeValid) {
+        if (user.twoFactAuth === false) {
+          return {valid: false};
+        }
+        throw new UnauthorizedException('Wrong authentication code');
+      }
+      
+      if (user.twoFactAuth == false) {
+        await this.authService.turnOnTfa(user);
+      }
+
+      //  Create and store jwt token to enable connection
+      const accessToken = await this.authService.generateToken({
+        sub: user.id,
+        isTwoFactAuth: true,
+      });
     }
 }

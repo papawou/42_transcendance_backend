@@ -1,4 +1,5 @@
 export type UserJWTPayload = {
     name: string,
-    sub: number
+    sub: number,
+    isTwoFactAuth?: boolean
 }

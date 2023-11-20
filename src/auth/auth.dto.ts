@@ -8,5 +8,6 @@ export class LoginDTO {
 export class TwoFactorAuthDTO {
     @IsNotEmpty()
     twoFactorCode!: string;
+    code!: string;
     name!: string;
   }

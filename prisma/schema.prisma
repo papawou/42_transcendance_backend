@@ -26,6 +26,9 @@ model User {
     pending   User[] @relation("pending")
     pendingOf User[] @relation("pending")
 
+    twoFactorAuth Boolean @default(false)
+    twoFactorSecret String?
+
 	matchHistory	Game[]
 }
 
