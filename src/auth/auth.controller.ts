@@ -33,6 +33,8 @@ export class AuthController {
     // POST auth/ft/callback
     @Post('ft/callback')
     async ftCallback(@Req() req: Request) {
+        if(!isDef(req.body.code))
+            throw new UnauthorizedException(">>> no code in body");
         const params = new URLSearchParams([
             ['grant_type', 'authorization_code'],
             ['client_id', process.env.FT_CLIENT_ID],
@@ -61,29 +63,28 @@ export class AuthController {
         // Save user in db
         // || Check user in db + if tfa is enabled
         const findUser = await prisma.user.findUnique({ where: { name: get.login } });
-        if ( findUser ) {
+        if ( isDef(findUser) ) {
             console.log(">>> user already in db");
-            await prisma.user.update({ // prevent duplicate
-                where: { name: get.login },
-                data: { 
-                    ft_id: '' + get.id,
-                    pic: get.image.link,
-            }, });
             // MATT : TFA HERE
             // if (hasEnabledTFA(get.login)) {
             // then send email with tfa code
             // then return tfa code
             // }
-        } else {
-            console.log(">>> user not in db");
-            await prisma.user.create({ // save user info in db
-                data: { 
-                    name: get.login,
-                    ft_id: '' + get.id,
-                    pic: get.image.link,
-             }, });
-        }
+            return this.authService.login(findUser); // return jwt
+        } 
+        console.log(">>> user not in db");
+        const createUser = await prisma.user.create({ // save user info in db
+            data: { 
+                name: get.login, // ex. krioja
+                ft_id: '' + get.id, // ex. 123456
+                pic: get.image.link, // ex. https://cdn.intra.42.fr/users/krioja.jpg
+            },
+        });
+        if (!isDef(createUser)) 
+            throw new UnauthorizedException(">>> error while creating user in db");
+        return this.authService.login(createUser); // return jwt
         // kenneth : TODO what about access_token and refresh_token and cookie?
-        return get;
+
+        // return get;
     }
 }
