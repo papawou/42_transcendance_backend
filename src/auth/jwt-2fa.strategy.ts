@@ -10,20 +10,21 @@ import { isDef } from 'src/technical/isDef';
 
 @Injectable()
 export class JwtTwoFactAuthStrategy extends PassportStrategy(Strategy, 'jwt-2fa') {
-    constructor(private readonly userService: UserService,
-        configService: ConfigService) {
-        super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ignoreExpiration: false,
-            secretOrKey: configService.get<string>("JWT_SECRET"),
-        });
-    }
+  constructor(private readonly userService: UserService,
+    private configService: ConfigService) {
+    super({
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        ignoreExpiration: false,
+        secretOrKey: configService.get<string>("JWT_SECRET"),
+    });
+  }
 
-    async validate(payload: UserJWTPayload | undefined): Promise<UserJWT> {
-        const tmp = jwtValidate(payload);
-        if (!isDef(tmp)) {
-            throw new UnauthorizedException()
-        }
-        return tmp
+  async validate(payload: UserJWTPayload | undefined): Promise<UserJWT | undefined> {
+    const tmp = jwtValidate(payload);
+    if (!isDef(tmp)) {
+        throw new UnauthorizedException()
     }
+    return tmp
+  }
 }
+
