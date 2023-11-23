@@ -9,7 +9,7 @@ import { UserJWT } from './jwt.strategy';
 import { isDef } from 'src/technical/isDef';
 
 @Injectable()
-export class JwtTwoFactAuthStrategy extends PassportStrategy(Strategy, 'jwt-2fa') {
+export class JwtTwoFactorAuthStrategy extends PassportStrategy(Strategy, 'jwt-2fa') {
   constructor(private readonly userService: UserService,
     private configService: ConfigService) {
     super({

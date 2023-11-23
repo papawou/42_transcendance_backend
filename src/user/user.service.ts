@@ -214,34 +214,39 @@ export class UserService {
 		}
 	
 		return user;
-	  }
+	}
 
-	updateSecret = async (id: number, secret: string): Promise<void> => {
-		await prisma.user.update({
-		  where: { id },
-		  data: { twoFactorSecret: secret },
+	updateSecret = async(id: number, secret: string) => {
+		const user = await prisma.user.update({
+		  where: { id: id },
+		  data: { 
+			twoFactorSecret: secret },
 		});
-	  }
-
-	  getSecret = async (id: number): Promise<string | null> => {
+		return user;
+	}
+	
+	getSecret = async(id: number) => {
 		const user = await prisma.user.findUnique({
-		  where: { id },
-		  select: { twoFactorSecret: true },
+		  where: { id: id },
 		});
 		return user?.twoFactorSecret ?? null;
-	  }
+	}
 	
-	  turnOnTfa = async(id: number): Promise<void> => {
-		await prisma.user.update({
-		  where: { id },
-		  data: { twoFactorAuth: true },
+	turnOnTfa = async(id: number) => {
+		const user = await prisma.user.update({
+		  where: { id: id },
+		  data: { 
+			twoFactorAuth: true },
 		});
-	  }
+		return user;
+	}
 	
-	  turnOffTfa = async(id: number): Promise<void> => {
-		await prisma.user.update({
-		  where: { id },
-		  data: { twoFactorAuth: false },
+	turnOffTfa = async(id: number) => {
+		const user = await prisma.user.update({
+		  where: { id: id },
+		  data: { 
+			twoFactorAuth: false },
 		});
-	  }
+		return user;
+	}
 }

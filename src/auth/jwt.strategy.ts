@@ -9,7 +9,7 @@ import { jwtValidate } from './utils';
 export type UserJWT = {
     userId: number,
     name: string,
-    twoFactAuth?: boolean
+    twoFactorAuth?: boolean
 }
 
 @Injectable()
@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         if (!isDef(tmp)) {
             throw new UnauthorizedException()
         }
-        if (tmp.twoFactAuth && payload?.isTwoFactAuth) {
+        if (tmp.twoFactorAuth && payload?.isTwoFactorAuth) {
             return tmp;
         }
     }

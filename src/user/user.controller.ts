@@ -202,11 +202,12 @@ export class UserController {
 	@Post('/turnOffTfa')
 	@UseGuards(JwtAuthGuard)
 	public async turnOffTfa(
-	  @Req() req: AuthRequest,
-	) {
+	  @Req() req: AuthRequest): Promise<User> {
 	  const user: any = req.user.userId;
 	  await this.userService.turnOffTfa(user.id);
 	  const userDto = await prisma.user.findUnique(user.id);
-	  return userDto;
+	  if (!isDef(userDto))
+			throw new NotFoundException();
+		return userDto;
 	}
 }

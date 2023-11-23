@@ -8,7 +8,7 @@ import { HttpService } from "@nestjs/axios";
 import { URLSearchParams } from "url";
 import { ConfigModule } from "@nestjs/config";
 import prisma from "@/database/prismaClient";
-import { JwtTwoFactAuthGuard } from './jwt-2fa.guard';
+import { JwtTwoFactorAuthGuard } from './jwt-2fa.guard';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Writable } from 'stream';
 import { TwoFactorAuthDTO } from './auth.dto';
@@ -103,7 +103,7 @@ export class AuthController {
     }
     
     // Qr code auth verification
-    @UseGuards(JwtTwoFactAuthGuard)
+    @UseGuards(JwtTwoFactorAuthGuard)
     @Post('2fa/validate')
     async verifyTwoFactAuth(
       @Req() req: Request, 
@@ -114,20 +114,20 @@ export class AuthController {
       const isCodeValid = await this.authService.verifyTwoFactAuth(body.code, user);
 
       if (!isCodeValid) {
-        if (user.twoFactAuth === false) {
+        if (user.twoFactorAuth === false) {
           return {valid: false};
         }
         throw new UnauthorizedException('Wrong authentication code');
       }
       
-      if (user.twoFactAuth == false) {
+      if (user.twoFactorAuth == false) {
         await this.authService.turnOnTfa(user);
       }
 
       //  Create and store jwt token to enable connection
       const accessToken = await this.authService.generateToken({
         sub: user.id,
-        isTwoFactAuth: true,
+        isTwoFactorAuth: true,
       });
     }
 }
