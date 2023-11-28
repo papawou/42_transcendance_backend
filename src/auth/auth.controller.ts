@@ -91,7 +91,7 @@ export class AuthController {
         return get;
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtTwoFactorAuthGuard)
     @Get('2fa/generate')
     async generate(@Req() req: Request, @Res() res: Writable) {
       //  Generate a new token // To change so it can verify if the setup is ok
@@ -101,6 +101,15 @@ export class AuthController {
       const qrCode = await this.authService.pipeQrCodeStream(res, otpauthUrl);
       return qrCode;
     }
+
+    @Post('2fa/enable')
+    @UseGuards(JwtTwoFactorAuthGuard)
+    async enable2FA(@Req() req: Request) {
+      const user: any = req.user;
+      const secret = await this.authService.turnOnTfa(user);
+      return { secret };
+    }
+
     
     // Qr code auth verification
     @UseGuards(JwtTwoFactorAuthGuard)
