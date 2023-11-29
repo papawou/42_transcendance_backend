@@ -1,4 +1,4 @@
-import { Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, NotFoundException, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, NotFoundException, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
@@ -38,6 +38,18 @@ export class UserController {
 		const uid = Number(req.user.userId);
 
 		const updatedUser = await this.userService.changeUsername(uid, newName);
+
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
+		return updatedUser;
+	}
+
+	@UseGuards(JwtAuthGuard)
+	@Post('/change-avatar')
+	async changeAvatar(@Req() req: AuthRequest, @Body('image') image: string) {
+		const userId = Number(req.user.userId);
+
+		const updatedUser = await this.userService.changeAvatar(userId, image);
 
 		if (!isDef(updatedUser))
 			throw new NotFoundException();
