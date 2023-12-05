@@ -36,12 +36,12 @@ export class ChatGateway implements OnGatewayConnection {
 		this.chatService.addSocketToRooms(client);
 		console.log('connected')
 	}
-
+	
 	/*********************** CREATE ROOM  ************************/
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('createRoom')
-	async createRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string, privacyPublic: boolean }) {
+	async createRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string, privacy: boolean }) {
 		if (this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'Room name already taken' });
 			return;
@@ -49,14 +49,15 @@ export class ChatGateway implements OnGatewayConnection {
 		const userDto: UserDto | null = await this.chatService.getUserFromId(socket.user.userId);
 		if (!userDto)
 			return;
-		
-		const newRoom: RoomDto = await this.chatService.createRoom(body.roomName, body.password, body.privacyPublic, userDto);
+
+		const newRoom: RoomDto = await this.chatService.createRoom(body.roomName, body.password, body.privacy, userDto);
 
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(newRoom);
 
 		this.server.to('user_' + userDto.id.toString()).emit('addRoom', { room: roomReturn });
 		this.server.to(socket.id).emit('chatNotif', { notif: `Room ${body.roomName} created successfully!` });
-		this.server.emit('roomCreated', { roomName: body.roomName })
+		if (body.privacy)
+			this.server.emit('roomCreated', { roomName: body.roomName })
 	}
 
 	/*********************** JOIN ROOM  ************************/
@@ -77,7 +78,7 @@ export class ChatGateway implements OnGatewayConnection {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'You are already in this room.' });
 			return;
 		}
-
+		
 		if (roomDto.password !== '' && body.password === '') {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room is locked by a password.' });
 			return;
