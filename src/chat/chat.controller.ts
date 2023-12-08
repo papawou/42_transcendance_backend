@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { ChatService, RoomDto, RoomReturnDto, PrivateMsgsDto } from './chat.service';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { UserJWT } from '@/auth/jwt.strategy';
 
 @Controller('chat')
 export class ChatController {
@@ -11,15 +12,11 @@ export class ChatController {
   public async getRoomsFromUser(
     @Req() req: AuthRequest,
   ) {
-    const user: any = req.user;
+    const user: UserJWT = req.user;
+    const rooms: RoomDto[] = this.chatService.getAllRoomsFromUser(user.userId);
 
-    const rooms: RoomDto[] = this.chatService.getAllRoomsFromUser(user.id);
-
-    const roomReturns = new Array<RoomReturnDto>;
-    rooms.forEach((room) => roomReturns.push(this.chatService.getReturnRoom(room)));
-
+    const roomReturns = rooms.map(room => this.chatService.getReturnRoom(room));
     return { rooms: roomReturns };
-
   }
 
   @Get('userPMs')
@@ -27,9 +24,9 @@ export class ChatController {
   public async getPMsFromUser(
     @Req() req: AuthRequest,
   ) {
-    const user: any = req.user;
+    const user: UserJWT = req.user;
 
-    const privateMsgs: PrivateMsgsDto[] | undefined = this.chatService.getUserPrivateMsgs(user.id);
+    const privateMsgs: PrivateMsgsDto[] | undefined = this.chatService.getUserPrivateMsgs(user.userId);
 
     return { privateMsgs: privateMsgs || [] };
   }

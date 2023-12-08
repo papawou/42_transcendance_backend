@@ -32,11 +32,13 @@ export class ChatGateway implements OnGatewayConnection {
 
 	@SubscribeMessage('connection')
 	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
+
 		this.chatService.createUser(client); //testing USER
 		this.chatService.addSocketToRooms(client);
+		this.server.in('user_' + client.user.userId.toString())
 		console.log('connected')
 	}
-	
+
 	/*********************** CREATE ROOM  ************************/
 
 	@UseGuards(WsJwtAuthGuard)
@@ -73,7 +75,7 @@ export class ChatGateway implements OnGatewayConnection {
 		let roomDto: RoomDto | undefined = this.chatService.getRoomFromName(body.roomName);
 		if (!roomDto)
 			return;
-
+			
 		if (this.chatService.isUserIdInRoom(socket.user.userId, roomDto)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'You are already in this room.' });
 			return;
@@ -197,7 +199,7 @@ export class ChatGateway implements OnGatewayConnection {
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(roomDto);
 		this.server.to(roomDto.roomName).emit('roomChanged', { newRoom: roomReturn });
 	};
-
+	
 	/*********************** CHANGE PASSWORD  ************************/
 
 	@UseGuards(WsJwtAuthGuard)

@@ -4,6 +4,7 @@ import { Socket } from 'socket.io';
 import { UserService } from 'src/user/user.service';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { AuthSocket } from '@/events/auth-socket.middleware';
+import { isDef } from '@/technical/isDef';
 
 export interface UserDto {
 	id: number;
@@ -258,13 +259,16 @@ export class ChatService {
 	/*********************** CONTROLLER ************************/
 
 	getAllRoomsFromUser(userId: number): RoomDto[] {
-		const userRooms = new Array<RoomDto>;
-		this.RoomList.forEach((value) => { value.users.find(({ id }) => id === userId) && userRooms.push(value); })
+		const userRooms: RoomDto[] = []
+		this.RoomList.forEach((value) => {
+			if (value.users.some(({ id }) => id === userId))
+				userRooms.push(value);
+		})
 		return userRooms;
 	}
 
 	getAllPublicRooms(): string[] {
-		const roomNames = new Array<string>;
+		const roomNames: string[] = []
 
 		this.RoomList.forEach(element => {
 			if (element.privacyPublic) {
@@ -274,11 +278,11 @@ export class ChatService {
 		return roomNames;
 	}
 
-	/*********************** UTILS ************************/
-
 	getUserPrivateMsgs(userId: number) {
 		return this.PrivateMsgList.get(userId);
 	}
+
+	/*********************** UTILS ************************/
 
 	getRoomFromName(name: string): RoomDto | undefined {
 		return (this.RoomList.get(name.toUpperCase()));
@@ -356,11 +360,8 @@ export class ChatService {
 
 	//TEST USER
 	async createUser(socket: AuthSocket) {
-
-		if (this.UserSockets.has(socket.user.userId)) {
-			return;
-		}
-		this.UserSockets.set(socket.user.userId, [socket]);
+		const userSockets = this.UserSockets.get(socket.user.userId) ?? []
+		this.UserSockets.set(socket.user.userId, [...userSockets, socket]);
 		socket.join('user_' + socket.user.userId.toString());
 	}
 
