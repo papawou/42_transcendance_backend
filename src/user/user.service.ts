@@ -6,13 +6,11 @@ import prisma from 'src/database/prismaClient';
 @Injectable()
 export class UserService {
 
-
 	getUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 			include: { blocked: true, friends: true },
 		});
-
 		return user;
 	}
 
