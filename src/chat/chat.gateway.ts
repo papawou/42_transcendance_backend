@@ -16,53 +16,49 @@ import { AuthSocket, WSAuthMiddleware } from '@/events/auth-socket.middleware';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
-@WebSocketGateway({
-	cors: {
-		origin: true,
-		credentials: true,
-	},
-})
+@WebSocketGateway({ cors: true })
 export class ChatGateway implements OnGatewayConnection {
 
 	@WebSocketServer()
 	server!: Server;
 
-	constructor(@Inject(ChatService) private chatService: ChatService, 
+	constructor(@Inject(ChatService) private chatService: ChatService,
 		private jwtService: JwtService, private configService: ConfigService) { }
 
 	afterInit(server: Server) {
 		const middle = WSAuthMiddleware(this.jwtService, this.configService);
 		server.use(middle)
 	}
-
+	
 	@SubscribeMessage('connection')
 	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
+
 		this.chatService.createUser(client); //testing USER
 		this.chatService.addSocketToRooms(client);
+		this.server.in('user_' + client.user.userId.toString())
 	}
 
 	/*********************** CREATE ROOM  ************************/
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('createRoom')
-	async createRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string }) {
-
+	async createRoom(@ConnectedSocket() socket: AuthSocket, @MessageBody() body: { roomName: string, password: string, privacy: boolean }) {
 		if (this.chatService.roomExist(body.roomName)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'Room name already taken' });
 			return;
 		}
-
 		const userDto: UserDto | null = await this.chatService.getUserFromId(socket.user.userId);
 		if (!userDto)
 			return;
 
-		const newRoom: RoomDto = await this.chatService.createRoom(body.roomName, body.password, userDto);
+		const newRoom: RoomDto = await this.chatService.createRoom(body.roomName, body.password, body.privacy, userDto);
 
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(newRoom);
 
 		this.server.to('user_' + userDto.id.toString()).emit('addRoom', { room: roomReturn });
 		this.server.to(socket.id).emit('chatNotif', { notif: `Room ${body.roomName} created successfully!` });
-		this.server.emit('roomCreated', { roomName: body.roomName })
+		if (body.privacy)
+			this.server.emit('roomCreated', { roomName: body.roomName })
 	}
 
 	/*********************** JOIN ROOM  ************************/
@@ -78,7 +74,12 @@ export class ChatGateway implements OnGatewayConnection {
 		let roomDto: RoomDto | undefined = this.chatService.getRoomFromName(body.roomName);
 		if (!roomDto)
 			return;
-
+			
+		if (this.chatService.isUserIdInRoom(socket.user.userId, roomDto)) {
+			this.server.to(socket.id).emit('chatNotif', { notif: 'You are already in this room.' });
+			return;
+		}
+		
 		if (roomDto.password !== '' && body.password === '') {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room is locked by a password.' });
 			return;
@@ -158,7 +159,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 		if (socket.user.userId === body.userId) {
 			this.server.to(socket.id).emit('chatNotif', { notif: "You can't PM yourself." });
-			return ;
+			return;
 		}
 
 		this.chatService.addToPmList(sender, receiver);
@@ -197,7 +198,7 @@ export class ChatGateway implements OnGatewayConnection {
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(roomDto);
 		this.server.to(roomDto.roomName).emit('roomChanged', { newRoom: roomReturn });
 	};
-
+	
 	/*********************** CHANGE PASSWORD  ************************/
 
 	@UseGuards(WsJwtAuthGuard)
@@ -330,7 +331,7 @@ export class ChatGateway implements OnGatewayConnection {
 
 		const newAdmin: UserDto | null = await this.chatService.getUserFromId(body.userId);
 		if (!newAdmin)
-			return ;
+			return;
 		this.server.to(socket.id).emit('chatNotif', { notif: `${newAdmin.name} is no longer admin!` });
 	};
 
@@ -406,4 +407,8 @@ export class ChatGateway implements OnGatewayConnection {
 
 		this.chatService.setMuteTime(roomDto, body.userId, body.time);
 	};
+}
+
+function isUserIdInRoom(userId: number, roomDto: RoomDto) {
+	throw new Error('Function not implemented.');
 }
