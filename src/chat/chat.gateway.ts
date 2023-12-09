@@ -29,14 +29,13 @@ export class ChatGateway implements OnGatewayConnection {
 		const middle = WSAuthMiddleware(this.jwtService, this.configService);
 		server.use(middle)
 	}
-
+	
 	@SubscribeMessage('connection')
 	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
 
 		this.chatService.createUser(client); //testing USER
 		this.chatService.addSocketToRooms(client);
 		this.server.in('user_' + client.user.userId.toString())
-		console.log('connected')
 	}
 
 	/*********************** CREATE ROOM  ************************/
