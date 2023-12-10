@@ -1,215 +1,208 @@
-import { isDef } from '@/technical/isDef';
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { NotFoundError } from 'rxjs';
+import { Injectable } from '@nestjs/common';
 import prisma from 'src/database/prismaClient';
 
 @Injectable()
 export class UserService {
-
+	//GETTERS
 	getUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
 			include: { blocked: true, friends: true },
 		});
+
 		return user;
 	}
 
-	sendFriendRequest = async (id1: number, id2: number) => {
-		if (id1 === id2) {
-			throw new ForbiddenException();
+	getMetaUser = async (userId: number) => {
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			include: { blocked: true, blockedOf: true, pending: true, pendingOf: true, friends: true },
+		})
+		return user
+	}
+
+	//FRIENDS
+	addFriendRequest = async (senderId: number, targetId: number) => {
+		if (senderId === targetId) {
+			return false;
 		}
-
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
-				data: {
-					pending: {
-						connect: { id: id2 },
-					},
+		try {
+			await prisma.user.update({
+				where: {
+					id: senderId,
+					friends: { none: { id: targetId } },
+					blocked: { none: { id: targetId } },
+					blockedOf: { none: { id: targetId } },
+					pendingOf: { none: { id: targetId } }
 				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
 				data: {
-					pendingOf: {
-						connect: { id: id1 },
-					},
+					pending: { connect: { id: targetId } },
 				},
-			}),
-		]);
-		return await prisma.user.findUnique({ where: { id: id1 } });
-	}
-
-	refuseFriendRequest = async (id1: number, id2: number) => {
-
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
-				data: {
-					pendingOf: {
-						disconnect: { id: id2 },
-					},
-				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
-				data: {
-					pending: {
-						disconnect: { id: id1 },
-					},
-				},
-			}),
-		]);
-		return await prisma.user.findUnique({ where: { id: id1 } });
-	}
-
-
-	addFriend = async (id1: number, id2: number) => {
-
-		this.refuseFriendRequest(id1, id2);
-
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
-				data: {
-					friends: { connect: { id: id2 } }
-				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
-				data: {
-					friends: { connect: { id: id1 } }
-				},
-			}),
-		]);
-
-		return await prisma.user.findUnique({ where: { id: id1 } });
-	}
-
-	deleteFriend = async (id1: number, id2: number) => {
-
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
-				data: {
-					friends: {
-						disconnect: { id: id2 }
-					},
-				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
-				data: {
-					friends: {
-						disconnect: { id: id1 }
-					},
-				},
-			}),
-		]);
-		return await prisma.user.findUnique({ where: { id: id1 } });
-	}
-
-	blockUser = async (id1: number, id2: number) => {
-
-		const areFriends = await prisma.user.findUnique({
-			where: { id: id1 },
-			select: { friends: { where: { id: id2 } } }
-		});
-
-		if (areFriends) {
-			this.deleteFriend(id1, id2);
+			})
 		}
+		catch {
+			return false;
+		}
+		return true;
+	}
 
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
+	deleteFriendRequest = async (senderId: number, targetId: number) => {
+		if (senderId === targetId) {
+			return false;
+		}
+		try {
+			await prisma.user.update({
+				where: { id: senderId },
 				data: {
-					blocked: {
-						connect: { id: id2 }
-					},
+					pending: { disconnect: { id: targetId } },
 				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
+			})
+		}
+		catch {
+			return false;
+		}
+		return true;
+	}
+
+
+	acceptFriendRequest = async (targetId: number, senderId: number) => {
+		if (targetId === senderId) {
+			return false;
+		}
+		try {
+			await prisma.$transaction([
+				prisma.user.update({
+					where: {
+						id: targetId,
+						pendingOf: { some: { id: senderId } },
+						blocked: { none: { id: senderId } },
+						blockedOf: { none: { id: senderId } },
+					},
+					data: {
+						friends: { connect: { id: senderId } },
+						pending: { disconnect: { id: senderId } }
+					},
+				}),
+				prisma.user.update({
+					where: {
+						id: senderId,
+						pending: { some: { id: targetId } },
+						blocked: { none: { id: targetId } },
+						blockedOf: { none: { id: targetId } }
+					},
+					data: {
+						friends: { connect: { id: targetId } },
+						pending: { disconnect: { id: targetId } }
+					},
+				})
+			])
+
+		}
+		catch (e) {
+			console.error(e)
+			return false;
+		}
+		return true;
+	}
+
+	deleteFriend = async (idUserA: number, idUserB: number) => {
+		if (idUserA === idUserB) {
+			return false;
+		}
+		try {
+			await prisma.$transaction([
+				prisma.user.update({
+					where: { id: idUserA },
+					data: {
+						friends: { disconnect: { id: idUserB } },
+					},
+				}),
+				prisma.user.update({
+					where: { id: idUserB },
+					data: {
+						friends: { disconnect: { id: idUserA } },
+					},
+				}),
+			]);
+		}
+		catch {
+			return false;
+		}
+		return true;
+	}
+
+	blockUser = async (viewerId: number, targetId: number) => {
+		if (viewerId === targetId) {
+			return false;
+		}
+		try {
+			await prisma.$transaction([
+				prisma.user.update({
+					where: { id: viewerId },
+					data: {
+						blocked: { connect: { id: targetId } },
+						friends: { disconnect: { id: targetId } },
+						pending: { disconnect: { id: targetId } }
+					},
+				}),
+				prisma.user.update({
+					where: { id: targetId },
+					data: {
+						friends: { disconnect: { id: viewerId } },
+						pending: { disconnect: { id: viewerId } }
+					},
+				}),
+			]);
+		}
+		catch {
+			return false;
+		}
+		return true;
+	}
+
+	unblockUser = async (viewerId: number, targetId: number) => {
+		if (viewerId === targetId) {
+			return false;
+		}
+		try {
+			await prisma.user.update({
+				where: { id: viewerId },
 				data: {
-					blockedOf: {
-						connect: { id: id1 }
-					},
+					blocked: { disconnect: { id: targetId } },
 				},
-			}),
-		]);
-		return await prisma.user.findUnique({ where: { id: id1 } });
+			})
+		}
+		catch {
+			return false
+		}
+		return true
 	}
 
-	unblockUser = async (id1: number, id2: number) => {
-
-		await prisma.$transaction([
-			prisma.user.update({
-				where: { id: id1 },
+	//SETTERS
+	changeUsername = async (userId: number, newName: string) => {
+		try {
+			return await prisma.user.update({
+				where: { id: userId },
 				data: {
-					blocked: {
-						disconnect: { id: id2 }
-					},
+					name: newName,
 				},
-			}),
-			prisma.user.update({
-				where: { id: id2 },
-				data: {
-					blockedOf: {
-						disconnect: { id: id1 }
-					},
-				},
-			}),
-		]);
-		return await prisma.user.findUnique({ where: { id: id1 } });
-	}
-
-	isBlocked = async (id1: number, id2: number) => {
-
-		const isblocked = await prisma.user.findUnique({
-			where: { id: id1 },
-			include: { blockedOf: { where: { id: id2 } } }
-		});
-		return isblocked?.blockedOf.length;
-	}
-
-	isPending = async (id1: number, id2: number) => {
-		const isPending = await prisma.user.findUnique({
-			where: { id: id1 },
-			include: { pendingOf: { where: { id: id2 } } }
-		});
-		return isPending?.pendingOf.length;
-	}
-
-	isFriend = async (id1: number, id2: number) => {
-		const isFriend = await prisma.user.findUnique({
-			where: { id: id1 },
-			include: { friends: { where: { id: id2 } } }
-		});
-		return isFriend?.friends.length;
-	}
-
-	changeUsername = async (id: number, newName: string) => {
-
-		const updatedUser = await prisma.user.update({
-			where: { id: id },
-			data: {
-				name: newName,
-			},
-		});
-
-		return updatedUser;
+			});
+		}
+		catch { }
+		return undefined;
 	}
 
 	changeAvatar = async (userId: number, image: string) => {
+		try {
+			return await prisma.user.update({
+				where: { id: userId },
+				data: {
+					pic: image,
+				}
+			});
+		}
+		catch { }
 
-		const updatedUser = await prisma.user.update({
-			where: { id: userId },
-			data: {
-				pic: image,
-			}
-		});
-
-		return updatedUser;
+		return undefined;
 	}
 }
