@@ -54,6 +54,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	handleDisconnecting(client: AuthSocket) {
 		const user = this.gameService.getUserGame(client.user.userId);
+		this.gameService.userGame.delete(client.user.userId)
 		if (!isDef(user) || !isDef(user.gameId)) {
 			return;
 		}
@@ -69,7 +70,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	handleDebug(@ConnectedSocket() client: AuthSocket, @MessageBody() body: WsGameIn<WsGame.debug>) {
 		return {
 			games: Array.from(this.gameService.getGames()).map(g => g[1].toData()).filter(g => !isDef(body?.gameId) || g.gameId === body?.gameId),
-			users: Array.from(this.gameService.getUserGames()).filter(u => !isDef(body?.userId) || u[0] === body?.userId).map(u => u[1])
+			users: Array.from(this.gameService.getUserGames()).filter(u => !isDef(body?.userId) || u[0] === body?.userId).map(u => u[1]),
+			duels: Array.from(this.gameService.duels)
 		}
 	}
 
@@ -133,7 +135,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	@SubscribeMessage(WsGame.setReady)
 	handleReady(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameDTO[WsGame.setReady]): WsGameOut<WsGame.setReady> {
 		const game = this.gameService.getGame(msg.gameId);
-		console.log(game)
 		if (!isDef(game)) {
 			return WS_FAIL;
 		}

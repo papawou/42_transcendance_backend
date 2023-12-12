@@ -11,6 +11,7 @@ export enum WsGame {
 
     //out server -> client
     close = "closeGame",
+    duelInvite = "duelInvite",
     duelStart = "duelStart",
 
     //meta in trigger out
@@ -68,6 +69,10 @@ export type WsGameEvents = {
     [WsGame.duelStart]: {
         in: undefined,
         out: string //gameId
+    },
+    [WsGame.duelInvite]: {
+        in: undefined,
+        out: number //senderId
     }
 
     //meta

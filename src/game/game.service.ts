@@ -7,10 +7,10 @@ import { UserGame } from "@/shared/shared";
 import { isDef } from "@/technical/isDef";
 import { Injectable } from "@nestjs/common";
 import { randomUUID } from "crypto";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 
 
-type Duel = { createdAt: Dayjs, targetId: number }
+type Duel = { createdAt: dayjs.Dayjs, targetId: number }
 
 @Injectable()
 export class GameService {
@@ -76,6 +76,9 @@ export class GameService {
 
 	//Duels
 	createDuel(senderId: number, targetId: number) {
+		if (senderId === targetId) {
+			return false;
+		}
 		const sender = this.getUserGame(senderId)
 		if (!isDef(sender) || isDef(sender.gameId) || sender.search) {
 			return false;
@@ -102,12 +105,15 @@ export class GameService {
 	}
 
 	acceptDuel(targetId: number, senderId: number) {
-		const duel = this.duels.get(senderId)
+		if (targetId === senderId) {
+			return false;
+		}
 
+		const duel = this.duels.get(senderId)
 		if (!isDef(duel) || duel.targetId !== targetId || !this.isDuelValid(duel)) {
 			return false;
 		}
-		const target = this.getUserGame(targetId);
+		const target = this.getUserGame(targetId)
 		if (!isDef(target) || !this.isFreeGame(target)) {
 			return false;
 		}
@@ -121,7 +127,7 @@ export class GameService {
 	}
 
 	isDuelValid(duel: Duel) {
-		const timeoutInvitation = 60
-		return duel.createdAt.diff(dayjs(), "seconds") < timeoutInvitation
+		const timeoutInvitation = 5
+		return dayjs().diff(duel.createdAt, "seconds") < timeoutInvitation
 	}
 }
