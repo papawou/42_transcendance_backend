@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, NotFoundException, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameService } from './game.service';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
@@ -6,7 +6,6 @@ import { DuelAcceptDTO, DuelInviteDTO } from './game.dto';
 import { GameGateway } from './game.gateway';
 import { isDef } from '@/technical/isDef';
 import { WsGame } from '@/shared/ws-game';
-import { UserGateway } from '@/user/user.gateway';
 
 @ApiTags('games')
 @Controller('games')
@@ -19,11 +18,12 @@ export class GameController {
 	async duelInvite(@Req() req: AuthRequest, @Body() body: DuelInviteDTO) {
 		const senderId = req.user.userId
 		const targetId = body.targetId
-		const ret = this.gameService.createDuel(senderId, targetId)
-		if (ret) {
-			this.gameGateway.emitToUser<WsGame.duelInvite>(targetId, WsGame.duelInvite, senderId)
+		const duel = this.gameService.createDuel(senderId, targetId)
+		if (!isDef(duel)) {
+			return false;
 		}
-		return ret;
+		this.gameGateway.emitToUser<WsGame.duelInvite>(targetId, WsGame.duelInvite, { senderId, createdAt: duel.createdAt.toISOString() })
+		return true;
 	}
 
 	@UseGuards(JwtAuthGuard)

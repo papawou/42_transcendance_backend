@@ -76,33 +76,33 @@ export class GameService {
 	}
 
 	//Duels
-	createDuel(senderId: number, targetId: number) {
+	createDuel(senderId: number, targetId: number): Duel | undefined {
 		if (senderId === targetId) {
-			return false;
+			return undefined;
 		}
 		const sender = this.getUserGame(senderId)
 		if (!isDef(sender) || isDef(sender.gameId) || sender.search) {
-			return false;
+			return undefined;
 		}
 		const target = this.getUserGame(targetId)
 		if (!isDef(target) || isDef(target.gameId) || target.search) {
-			return false;
+			return undefined;
 		}
 
 		//sender has already a pending invitation
 		const senderDuel = this.duels.get(senderId)
 		if (isDef(senderDuel) && this.isDuelValid(senderDuel)) {
-			return false;
+			return undefined;
 		}
 
 		//senderId is already invited by targetId //TODO turn into acceptDuel ?
 		const targetDuel = this.duels.get(targetId)
 		if (isDef(targetDuel) && targetDuel.targetId === senderId && this.isDuelValid(targetDuel)) {
-			return false
+			return undefined
 		}
-
-		this.duels.set(senderId, { createdAt: dayjs(), targetId: targetId })
-		return true;
+		const duel = { createdAt: dayjs(), targetId: targetId }
+		this.duels.set(senderId, duel)
+		return duel;
 	}
 
 	acceptDuel(targetId: number, senderId: number) {
@@ -128,7 +128,7 @@ export class GameService {
 	}
 
 	isDuelValid(duel: Duel) {
-		const timeoutInvitation = 5
+		const timeoutInvitation = 60
 		return dayjs().diff(duel.createdAt, "seconds") < timeoutInvitation
 	}
 }

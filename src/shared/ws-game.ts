@@ -67,7 +67,10 @@ export type WsGameEvents = {
     },
     [WsGame.duelInvite]: {
         in: undefined,
-        out: number //senderId
+        out: {
+            senderId: number,
+            createdAt: string
+        }
     }
 
     //meta
