@@ -31,6 +31,18 @@ export class ChatController {
     return { privateMsgs: privateMsgs || [] };
   }
 
+  @Get('blockedUsers')
+  @UseGuards(JwtAuthGuard)
+  public async getBlockedUsers(
+    @Req() req: AuthRequest,
+  ) {
+    const user: UserJWT = req.user;
+
+    const blockedUsers = await this.chatService.getUserBlockedUsers(user.userId);
+
+    return { blockedUsers };
+  }
+
   @Get('roomNames')
   public async GetAllPublicRooms() {
     const roomNames: string[] = this.chatService.getAllPublicRooms();

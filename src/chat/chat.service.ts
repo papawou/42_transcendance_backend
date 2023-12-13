@@ -5,6 +5,7 @@ import { UserService } from 'src/user/user.service';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { AuthSocket } from '@/events/auth-socket.middleware';
 import { isDef } from '@/technical/isDef';
+import { User } from '@prisma/client';
 
 export interface UserDto {
 	id: number;
@@ -280,6 +281,18 @@ export class ChatService {
 
 	getUserPrivateMsgs(userId: number) {
 		return this.PrivateMsgList.get(userId);
+	}
+
+	async getUserBlockedUsers(userId: number) { // blocked not found in User schema .....
+		const user = await this.userService.getUser(userId);
+		if (user === null) {
+			return null;
+		}
+		const blockedUsers: number[] = (user as unknown as { blocked: User[] }).blocked.map(
+			(blockedUser) => blockedUser.id
+		);
+		
+		return blockedUsers;
 	}
 
 	/*********************** UTILS ************************/
