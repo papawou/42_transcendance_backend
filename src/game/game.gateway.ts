@@ -11,6 +11,7 @@ import { WS_FAIL, WsGame, WsGameIn, WsGameOut } from "@/shared/ws-game";
 import { UserGame } from "@/shared/shared";
 import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
 import { GameService } from "./game.service";
+import { GameType } from "@/shared/pong/pong";
 
 @WebSocketGateway({ cors: true })
 @UsePipes(new ValidationPipe())
@@ -37,7 +38,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 		if (match.length != 2) {
 			return;
 		}
-		this.createGame(match)
+		this.createGame(match, "RANKED")
 	}
 
 	afterInit(server: Server) {
@@ -95,16 +96,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	}
 
 	//---------------MAIN
-	@UseGuards(WsJwtAuthGuard)
-	@SubscribeMessage(WsGame.search)
-	handleSearch(@ConnectedSocket() client: AuthSocket): WsGameOut<WsGame.search> {
-		const user = this.gameService.getUserGame(client.user.userId)
-		if (!isDef(user) || isDef(user.gameId)) {
-			return false;
-		}
-		this.setUserGame(client.user.userId, { search: true })
-		return true;
-	}
+	
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.joinRoom)
@@ -230,13 +222,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	}
 
 	//---------------GAME
-	createGame(match: number[]) {
-		const game = this.gameService.createGame(match);
+	createGame(match: number[], type: GameType) {
+		const game = this.gameService.createGame(match, type);
 		if (!isDef(game)) {
 			console.warn("error creating game")
 			return;
 		}
-		
+
 		this.setUserGame(match[0], { gameId: game.gameId, search: false })
 		this.setUserGame(match[1], { gameId: game.gameId, search: false })
 		return game

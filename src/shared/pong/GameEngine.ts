@@ -3,12 +3,15 @@ import { Physics } from "./physics/Physics";
 import { isDef } from "@/technical/isDef";
 import { GameEngineData, GameEngineStatus, GameObjectSide, PlayerData } from "./pong";
 import { Player } from "./Player";
+import { GameType } from "@prisma/client";
 
 export class GameEngine<T extends GameObjectSide> {
     sc: Scene<T>;
     physics: Physics<T>
     intervalId: NodeJS.Timeout | null = null
 
+
+    type: GameType
     gameId: string
     width: number
     height: number
@@ -21,10 +24,10 @@ export class GameEngine<T extends GameObjectSide> {
     //playerId, barId
     playersBar = new Map<string, string>()
 
-    constructor(gameId: string, width: number, height: number, scene: Scene<T>, physics: Physics<T>) {
+    constructor(gameId: string, width: number, height: number, type: GameType, scene: Scene<T>, physics: Physics<T>) {
         this.sc = scene
         this.physics = physics
-
+        this.type = type
         this.gameId = gameId
         this.width = width
         this.height = height
@@ -122,7 +125,7 @@ export class GameEngine<T extends GameObjectSide> {
             this.stop(`Player ${player.userId} has won`)
         }
     }
-    
+
     //playerManager
     getNextSlot() {
         for (const [key, value] of this.players) {
@@ -180,6 +183,7 @@ export class GameEngine<T extends GameObjectSide> {
             sc: this.sc.toData(),
             physics: this.physics.toData(),
 
+            type: this.type,
             width: this.width,
             height: this.height,
             gameId: this.gameId,

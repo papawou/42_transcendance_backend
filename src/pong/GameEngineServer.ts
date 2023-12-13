@@ -7,15 +7,16 @@ import Scene from "@/shared/pong/Scene";
 import { getBodyLine } from "@/shared/pong/physics/rigid/Line";
 import { getBodyBox } from "@/shared/pong/physics/rigid/Box";
 import { getBodyCircle } from "@/shared/pong/physics/rigid/Circle";
+import { GameEngineStatus } from "@/shared/pong/pong";
+import { GameType } from "@prisma/client";
 
 export class GameEngineServer extends GameEngine<GameObjectServer> {
 
     triggerCallbacks: Array<() => void> = [];
     postLoopCb?: () => void;
 
-    constructor(gameId: string, width: number, height: number, scene: Scene<GameObjectServer>, physics: PhysicsServer) {
-        super(gameId, width, height, scene, physics);
-
+    constructor(gameId: string, width: number, height: number, type: GameType, scene: Scene<GameObjectServer>, physics: PhysicsServer) {
+        super(gameId, width, height, type, scene, physics);
         this.players.set("left", undefined)
         this.players.set("right", undefined)
         this.playersBar.set("left", "leftBar")

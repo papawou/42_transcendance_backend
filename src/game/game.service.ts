@@ -6,6 +6,7 @@ import { GameEngineData } from "@/shared/pong/pong";
 import { UserGame } from "@/shared/shared";
 import { isDef } from "@/technical/isDef";
 import { Injectable } from "@nestjs/common";
+import { GameType } from "@prisma/client";
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 
@@ -23,7 +24,7 @@ export class GameService {
 		await prisma.game.create({
 			data: {
 				id: game.gameId,
-				type: "CASUAL",
+				type: game.type,
 				players: {
 					createMany: {
 						data: players
@@ -34,9 +35,9 @@ export class GameService {
 	}
 
 	//GAMES
-	createGame(users: number[]) {
+	createGame(users: number[], type: GameType) {
 		const id = randomUUID()
-		const game = new GameEngineServer(id, 500, 500, new Scene(), new PhysicsServer())
+		const game = new GameEngineServer(id, 500, 500, type, new Scene(), new PhysicsServer())
 
 		if (!game.joinPlayer(users[0]) || !game.joinPlayer(users[1])) {
 			return null

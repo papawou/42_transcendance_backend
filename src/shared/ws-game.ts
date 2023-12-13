@@ -7,7 +7,6 @@ export enum WsGame {
     leaveRoom = "leaveRoomGame",
     sendKey = "sendKeyGame",
     setReady = "setReadyGame",
-    search = "searchGame",
 
     //out server -> client
     close = "closeGame",
@@ -57,10 +56,6 @@ export type WsGameEvents = {
         in: WsGameSetReady,
         out: true | WS_NULL
     },
-    [WsGame.search]: {
-        in: undefined,
-        out: true | false
-    },    
     //out
     [WsGame.close]: {
         in: undefined,
