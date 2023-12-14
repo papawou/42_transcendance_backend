@@ -8,11 +8,12 @@ import { HttpService } from "@nestjs/axios";
 import { URLSearchParams } from "url";
 import { ConfigModule } from "@nestjs/config";
 import prisma from "@/database/prismaClient";
+import axios from "axios";
 
 @Controller('auth')
 export class AuthController {
     constructor(
-        private authService: AuthService, 
+        private authService: AuthService,
         private httpService: HttpService) { }
 
     @Post('login')
@@ -24,15 +25,14 @@ export class AuthController {
         return this.authService.login(user);
     }
 
-    // GET auth/ft/callback
-    @Get('ft/callback')
-    async handleFtCallback() {
-      return { msg: 'ft callback' };
-    }
-
     // POST auth/ft/callback
     @Post('ft/callback')
     async ftCallback(@Req() req: Request) {
+        console.log("@post auth/ft/callback");
+        if(!isDef(req.body.code)) {
+            console.log(">>> no code in body");
+            throw new UnauthorizedException(">>> no code in body");
+        }
         const params = new URLSearchParams([
             ['grant_type', 'authorization_code'],
             ['client_id', process.env.FT_CLIENT_ID],
@@ -43,47 +43,68 @@ export class AuthController {
 
         // Exchange your code for an access token
         const endpoint_post = "https://api.intra.42.fr/oauth/token?" + params.toString();
-        const post = await lastValueFrom(this.httpService.post(endpoint_post).pipe(
-            map((resp) => {
+        const post = await axios
+            .post(endpoint_post)
+            .then((resp) => {
                 return resp.data;
-            }),
-        ));
+            })
+            .catch((err) => {
+                console.log({
+                    where: "auth.controller.ts@post.catch",
+                    status: err.response.status,
+                    statusText: err.response.statusText,
+                    data: err.response.data,
+                });
+            });
+        if (!isDef(post)) {
+            console.log({
+                where: "auth.controller.ts > if (!isDef(post))",
+                status: "STRANGE BEHAVIOR",
+                what: ">>> no access_token in post",
+                warning: "This error message can be triggered by the first useEffect hook run which has no repercussion whatsoever for the second run, see AuthFtCallback.tsx l.15"
+            });
+            return ;
+        }
 
         // Make API requests with your token
-        const get = await lastValueFrom(this.httpService.get('https://api.intra.42.fr/v2/me',{
-            headers: { Authorization: `Bearer ${post.access_token}`,},
-        }).pipe(
-            map((resp) => {
-                if (post.access_token) return resp.data;
-            }),
-        ));
-
+        const get = await axios
+            .get('https://api.intra.42.fr/v2/me', {
+                headers: { 'Authorization': `Bearer ${post.access_token}` }
+            })
+            .then((resp) => {
+                if (isDef(post.access_token)) return resp.data;
+            })
+            .catch((err) => {
+                console.log({
+                    where: "auth.controller.ts@get.catch",
+                    status: err.response.status,
+                    statusText: err.response.statusText,
+                    data: err.response.data,
+                });
+            });
+        
         // Save user in db
         // || Check user in db + if tfa is enabled
         const findUser = await prisma.user.findUnique({ where: { name: get.login } });
-        if ( findUser ) {
+        if ( isDef(findUser) ) {
             console.log(">>> user already in db");
-            await prisma.user.update({ // prevent duplicate
-                where: { name: get.login },
-                data: { 
-                    ft_id: '' + get.id,
-                    pic: get.image.link,
-            }, });
             // MATT : TFA HERE
             // if (hasEnabledTFA(get.login)) {
             // then send email with tfa code
             // then return tfa code
             // }
-        } else {
-            console.log(">>> user not in db");
-            await prisma.user.create({ // save user info in db
-                data: { 
-                    name: get.login,
-                    ft_id: '' + get.id,
-                    pic: get.image.link,
-             }, });
+            return this.authService.login(findUser); // return jwt
         }
-        // kenneth : TODO what about access_token and refresh_token and cookie?
-        return get;
+        console.log(">>> user not in db");
+        const createUser = await prisma.user.create({ // save user info in db
+            data: {
+                name: get.login, // ex. krioja
+                ft_id: '' + get.id, // ex. 123456
+                pic: get.image.link, // ex. https://cdn.intra.42.fr/users/krioja.jpg
+            },
+        });
+        if (!isDef(createUser))
+            throw new UnauthorizedException(">>> error while creating user in db");
+        return this.authService.login(createUser); // return jwt
     }
 }
