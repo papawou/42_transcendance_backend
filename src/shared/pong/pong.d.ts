@@ -1,6 +1,8 @@
 import { GameObjectServer } from "../server/GameObjectServer";
 
-export type GameEngineStatus = "RUNNING" | "PENDING"
+export type GameEngineStatus = "RUNNING" | "PENDING" | "CLOSED"
+
+export type GameType = "CASUAL" | "RANKED"
 
 export type PlayerData = {
     playerId: string,
@@ -33,11 +35,13 @@ export type GameEngineData = {
     sc: SceneData,
     physics: PhysicsData,
 
+    type: GameType,
     width: number,
     height: number,
-    roomId: string,
+    gameId: string,
     players: PlayerData[],
-    status: GameEngineStatus
+    status: GameEngineStatus,
+    closed_reason?: string
 }
 
 export type GameObjectSide = GameObjectServer

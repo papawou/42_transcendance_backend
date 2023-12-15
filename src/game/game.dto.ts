@@ -1,9 +1,9 @@
 import { WsGame, WsGameJoinRoom, WsGameLeaveRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
-import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
+import { IsBoolean, IsNumber, IsString } from "class-validator";
 
 class WsGameRoomDTO implements WsGameRoom {
     @IsString()
-    roomId!: string
+    gameId!: string
 }
 
 class WsGameJoinRoomDTO extends WsGameRoomDTO implements WsGameJoinRoom { }
@@ -24,4 +24,14 @@ export type WsGameDTO = {
     [WsGame.leaveRoom]: WsGameLeaveRoomDTO,
     [WsGame.sendKey]: WsGameSendKeyDTO,
     [WsGame.setReady]: WsGameSetReadyDTO
+}
+
+export class DuelInviteDTO {
+    @IsNumber()
+    targetId!: number
+}
+
+export class DuelAcceptDTO {
+    @IsNumber()
+    senderId!: number
 }
