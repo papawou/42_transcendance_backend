@@ -61,7 +61,7 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
             g: {
                 halfDim: {
                     x: 5,
-                    y: this.height / 5
+                    y: this.height / 5 / 2
                 }
             },
             p: { x: 0, y: this.height / 2 }
@@ -73,7 +73,7 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
             g: {
                 halfDim: {
                     x: 5,
-                    y: this.height / 5
+                    y: this.height / 5 / 2
                 }
             },
             p: { x: 0, y: this.height / 2 },
