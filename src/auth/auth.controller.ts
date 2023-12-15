@@ -26,7 +26,7 @@ export class AuthController {
         return this.authService.login(user);
     }
     
-    @Put('2fa/enable')
+    @Post('2fa/enable')
     async enableTwoFactor(@Body() enableTwoFactorDTO: EnableTwoFactorDTO) {
         return await this.authService.enableTwoFactor(enableTwoFactorDTO);
     }
@@ -79,8 +79,8 @@ export class AuthController {
 
             const otpAuthUrl = speakeasy.otpauthURL({
                 secret: secretKey,
-                label: 'Transcendence',
-                issuer: 'Transcendence',
+                label: findUser.name,
+                issuer: process.env.FT_CLIENT_ID,
             });
             const qrCodeImage = await qrcode.toDataURL(otpAuthUrl);
             console.log(">>> user already in db");
@@ -91,6 +91,7 @@ export class AuthController {
                     pic: get.image.link,
                     twoFactorEnabled: true,
                     secretKey: secretKey,
+                    qrCodeImage: qrCodeImage,
             }, });
             return { qrCodeImage };
         } else {

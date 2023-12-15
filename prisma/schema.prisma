@@ -30,6 +30,7 @@ model User {
 
     twoFactorEnabled Boolean @default(false)
     secretKey       String?
+    qrCodeImage   String?
 }
 
 model Game {
