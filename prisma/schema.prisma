@@ -22,8 +22,6 @@ model User {
     pending   User[] @relation("pending")
     pendingOf User[] @relation("pending")
 
-    matchHistory Game[]
-
     twoFactorEnabled Boolean @default(false)
     secretKey       String?
     qrCodeImage   String?

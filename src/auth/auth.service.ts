@@ -41,7 +41,7 @@ export class AuthService {
                 secretKey: secretKey,
             },
         });
-        return { message: '2FA enabled successfully' };
+        return { message: '2FA enabled successfully' , secretKey};
     }
 
     async validateTwoFactor(validateTwoFactorDTO: ValidateTwoFactorDTO) {
