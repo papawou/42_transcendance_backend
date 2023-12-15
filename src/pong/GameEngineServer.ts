@@ -7,8 +7,7 @@ import Scene from "@/shared/pong/Scene";
 import { getBodyLine } from "@/shared/pong/physics/rigid/Line";
 import { getBodyBox } from "@/shared/pong/physics/rigid/Box";
 import { getBodyCircle } from "@/shared/pong/physics/rigid/Circle";
-import { GameEngineStatus } from "@/shared/pong/pong";
-import { GameType } from "@prisma/client";
+import { GameType } from "@/shared/pong/pong";
 
 export class GameEngineServer extends GameEngine<GameObjectServer> {
 
