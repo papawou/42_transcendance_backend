@@ -1,9 +1,12 @@
-import { NotFoundException, UseGuards } from "@nestjs/common";
-import { ConnectedSocket, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { Inject, NotFoundException, UseGuards } from "@nestjs/common";
+import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io"
 import { UserService } from "./user.service";
 import { isDef } from "@/technical/isDef";
 import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
 
 
 @WebSocketGateway({
@@ -14,20 +17,25 @@ import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
 })
 export class UserGateway implements OnGatewayConnection {
 
-	constructor(private readonly userService: UserService) { }
-
 	@WebSocketServer()
-	server?: Server;
+	server!: Server;
 
-	async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+	constructor(@Inject(UserService) private userService: UserService, 
+	private jwtService: JwtService, private configService: ConfigService) { }
 
+	afterInit(server: Server) {
+		const middle = WSAuthMiddleware(this.jwtService, this.configService);
+		server.use(middle)
+	}
+
+	@SubscribeMessage('connection')
+	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
 	}
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('sendFriendRequest')
-	async sendFriendRequest(@ConnectedSocket() connectSocket: Socket, id: number) {
+	async sendFriendRequest(@ConnectedSocket() connectSocket: Socket, @MessageBody() body: {id: number}){
 
-		console.log("SEND FRIEND REQUEST");
 		const updatedUser = await this.userService.sendFriendRequest(1, 2);
 
 		if (!isDef(updatedUser))

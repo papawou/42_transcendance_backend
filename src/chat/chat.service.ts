@@ -4,6 +4,7 @@ import { Socket } from 'socket.io';
 import { UserService } from 'src/user/user.service';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { AuthSocket } from '@/events/auth-socket.middleware';
+import { isDef } from '@/technical/isDef';
 
 export interface UserDto {
 	id: number;
@@ -28,6 +29,7 @@ export interface RoomDto {
 	users: Array<UserDto>;
 	messages: Array<MessageDto>;
 	password: string;
+	privacyPublic: boolean,
 	mutedMap: Map<number, number>;
 	banMap: Map<number, number>;
 };
@@ -60,13 +62,14 @@ export class ChatService {
 	/*********************** CREATE ROOM  ************************/
 
 
-	async createRoom(roomName: string, password: string, userDto: UserDto): Promise<RoomDto> {
+	async createRoom(roomName: string, password: string, privacyPublic: boolean, userDto: UserDto): Promise<RoomDto> {
 		const roomDto: RoomDto = {
 			roomName: roomName,
 			owner: userDto.id,
 			admins: [userDto.id],
 			users: [],
 			messages: [],
+			privacyPublic: privacyPublic ? true : false,
 			password: password && password !== '' ? await hashPwd(password) : password,
 			mutedMap: new Map(),
 			banMap: new Map(),
@@ -256,22 +259,30 @@ export class ChatService {
 	/*********************** CONTROLLER ************************/
 
 	getAllRoomsFromUser(userId: number): RoomDto[] {
-		const userRooms = new Array<RoomDto>;
-		this.RoomList.forEach((value) => { value.users.find(({ id }) => id === userId) && userRooms.push(value); })
+		const userRooms: RoomDto[] = []
+		this.RoomList.forEach((value) => {
+			if (value.users.some(({ id }) => id === userId))
+				userRooms.push(value);
+		})
 		return userRooms;
 	}
 
-	getAllRoomNames(): string[] {
-		const roomNames = new Array<string>;
-		this.RoomList.forEach(element => roomNames.push(element.roomName));
+	getAllPublicRooms(): string[] {
+		const roomNames: string[] = []
+
+		this.RoomList.forEach(element => {
+			if (element.privacyPublic) {
+				roomNames.push(element.roomName);
+			}
+		})
 		return roomNames;
 	}
-
-	/*********************** UTILS ************************/
 
 	getUserPrivateMsgs(userId: number) {
 		return this.PrivateMsgList.get(userId);
 	}
+
+	/*********************** UTILS ************************/
 
 	getRoomFromName(name: string): RoomDto | undefined {
 		return (this.RoomList.get(name.toUpperCase()));
@@ -301,6 +312,10 @@ export class ChatService {
 			return false;
 		}
 		return true;
+	}
+
+	isUserIdInRoom(userId: number, roomDto: RoomDto): boolean {
+		return roomDto.users.some(user => user.id === userId);
 	}
 
 	roomExist(roomName: string): boolean {
@@ -345,13 +360,8 @@ export class ChatService {
 
 	//TEST USER
 	async createUser(socket: AuthSocket) {
-
-		if (this.UserSockets.has(socket.user.userId)) {
-			return;
-		}
-
-		this.UserSockets.set(socket.user.userId, [socket]);
-		console.log("app")
+		const userSockets = this.UserSockets.get(socket.user.userId) ?? []
+		this.UserSockets.set(socket.user.userId, [...userSockets, socket]);
 		socket.join('user_' + socket.user.userId.toString());
 	}
 

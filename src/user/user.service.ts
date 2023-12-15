@@ -193,12 +193,23 @@ export class UserService {
 
 	changeUsername = async (id: number, newName: string) => {
 
-		console.log(newName);
 		const updatedUser = await prisma.user.update({
 			where: { id: id },
 			data: {
 				name: newName,
 			},
+		});
+
+		return updatedUser;
+	}
+
+	changeAvatar = async(userId: number, image: string) =>  {
+
+		const updatedUser = await prisma.user.update({
+			where: {id: userId},
+			data: {
+				pic: image,
+			}
 		});
 
 		return updatedUser;
