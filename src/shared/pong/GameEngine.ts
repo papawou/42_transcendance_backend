@@ -1,7 +1,7 @@
 import Scene from "./Scene";
 import { Physics } from "./physics/Physics";
 import { isDef } from "@/technical/isDef";
-import { GameEngineData, GameEngineStatus, GameObjectSide, PlayerData } from "./pong";
+import { GameEngineData, GameEngineStatus, GameObjectSide, GameType, PlayerData } from "./pong";
 import { Player } from "./Player";
 
 export class GameEngine<T extends GameObjectSide> {
@@ -9,22 +9,25 @@ export class GameEngine<T extends GameObjectSide> {
     physics: Physics<T>
     intervalId: NodeJS.Timeout | null = null
 
-    roomId: string
+
+    type: GameType
+    gameId: string
     width: number
     height: number
 
     status: GameEngineStatus = "PENDING"
+    closed_reason?: string
 
     //playerId, userId
     players = new Map<string, Player | undefined | null>()
     //playerId, barId
     playersBar = new Map<string, string>()
 
-    constructor(roomId: string, width: number, height: number, scene: Scene<T>, physics: Physics<T>) {
+    constructor(gameId: string, width: number, height: number, type: GameType, scene: Scene<T>, physics: Physics<T>) {
         this.sc = scene
         this.physics = physics
-
-        this.roomId = roomId
+        this.type = type
+        this.gameId = gameId
         this.width = width
         this.height = height
     }
@@ -38,8 +41,9 @@ export class GameEngine<T extends GameObjectSide> {
         this.intervalId = setInterval(() => this.loop(), 1000 * this.physics.PHYSICS_FPS);
     }
 
-    stop() {
-        this.status = "PENDING"
+    stop(reason?: string) {
+        this.closed_reason = reason ?? this.closed_reason
+        this.status = "CLOSED"
         if (!isDef(this.intervalId)) {
             return;
         }
@@ -116,8 +120,10 @@ export class GameEngine<T extends GameObjectSide> {
             return;
         }
         ++player.score
+        if (player.score >= 5) {
+            this.stop(`Player ${player.userId} has won`)
+        }
     }
-    //
 
     //playerManager
     getNextSlot() {
@@ -163,10 +169,6 @@ export class GameEngine<T extends GameObjectSide> {
         return Array.from(this.players.values()).every(p => p?.isReady ?? false)
     }
 
-    isClosed(): boolean {
-        return Array.from(this.players.values()).some(p => p === null)
-    }
-
     toData(): GameEngineData {
         const playersData: PlayerData[] = [];
         this.players.forEach((p, key) => {
@@ -180,15 +182,17 @@ export class GameEngine<T extends GameObjectSide> {
             sc: this.sc.toData(),
             physics: this.physics.toData(),
 
+            type: this.type,
             width: this.width,
             height: this.height,
-            roomId: this.roomId,
+            gameId: this.gameId,
             players: Array.from(this.players).map(([key, p]) => ({
                 playerId: key,
                 barId: this.playersBar.get(key),
                 user: p?.toData()
             })),
-            status: this.status
+            status: this.status,
+            closed_reason: this.closed_reason
         })
     }
 }

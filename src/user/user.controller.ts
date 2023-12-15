@@ -5,6 +5,7 @@ import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { User } from '@prisma/client';
 import { isDef } from '@/technical/isDef';
+import { UserDTO } from './user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -13,19 +14,16 @@ export class UserController {
 	constructor(private readonly userService: UserService) { }
 
 	@Get()
-	async getUsers(): Promise<User[]> {
+	async getUsers(): Promise<UserDTO[]> {
 		const users = await prisma.user.findMany();
-		if (!isDef(users))
-			throw new NotFoundException();
 		return users;
 	}
 
 	@Get(':id/user')
-	async getUser(@Param('id', ParseIntPipe) id: number): Promise<User> {
-
+	async getUser(@Param('id', ParseIntPipe) id: number): Promise<UserDTO> {
 		const user = await this.userService.getUser(id);
 
-		if(!isDef(user))
+		if (!isDef(user))
 			throw new NotFoundException();
 		return user;
 	}
@@ -34,10 +32,9 @@ export class UserController {
 	@Post('/change-name/:newName')
 	async changeName(
 		@Req() req: AuthRequest,
-		@Param('newName') newName: string): Promise<User> {
-		const uid = Number(req.user.userId);
-
-		const updatedUser = await this.userService.changeUsername(uid, newName);
+		@Param('newName') newName: string): Promise<UserDTO> { //TODO check IsString param && maxLength (rule enforced in frontend not backend)
+		const viewerId = req.user.userId
+		const updatedUser = await this.userService.changeUsername(viewerId, newName);
 
 		if (!isDef(updatedUser))
 			throw new NotFoundException();
@@ -46,161 +43,49 @@ export class UserController {
 
 	@UseGuards(JwtAuthGuard)
 	@Post('/change-avatar')
-	async changeAvatar(@Req() req: AuthRequest, @Body('image') image: string) {
-		const userId = Number(req.user.userId);
-
-		const updatedUser = await this.userService.changeAvatar(userId, image);
+	async changeAvatar(@Req() req: AuthRequest, @Body('image') image: string): Promise<UserDTO> { //TODO check if image is a real image
+		const viewerId = req.user.userId;
+		const updatedUser = await this.userService.changeAvatar(viewerId, image);
 
 		if (!isDef(updatedUser))
 			throw new NotFoundException();
 		return updatedUser;
 	}
 
-/*------------------------------FRIENDS--------------------------*/
+	/*------------------------------FRIENDS--------------------------*/
 
 	@UseGuards(JwtAuthGuard)
 	@Get('/friends')
-	async getFriends(@Req() req: AuthRequest): Promise<User[]> {
-		const uid = Number(req.user.userId)
+	async getFriends(@Req() req: AuthRequest): Promise<UserDTO[]> {
+		const viewerId = req.user.userId
 
-		const user = await this.userService.getUser(uid);
+		const user = await this.userService.getUser(viewerId);
 
 		if (!isDef(user))
 			throw new NotFoundException();
 		return user.friends;
 	}
 
-	@UseGuards(JwtAuthGuard)
-	@Post('/add-friend/:friendId')
-	async addFriend(
-		@Req() req: AuthRequest,
-		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
-		const id1 = Number(req.user.userId);
-
-		const updatedUser = await this.userService.addFriend(id1, friendId);
-
-		if (!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
-
-	@UseGuards(JwtAuthGuard)
-	@Post('/delete-friend/:friendId')
-	async deleteFriend(
-		@Req() req: AuthRequest,
-		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
-		const id1 = Number(req.user.userId);
-
-		const updatedUser = await this.userService.deleteFriend(id1, friendId);
-
-		if (!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
-
 	/*------------------------------BLOCK--------------------------*/
-
-	@UseGuards(JwtAuthGuard)
-	@Post('/block-user/:blockedUserId')
-	async blockUser(
-		@Req() req: AuthRequest,
-		@Param('blockedUserId', ParseIntPipe) blockedUserId: number): Promise<User> {
-		const id1 = Number(req.user.userId);
-
-		if (id1 === blockedUserId)
-			throw new ForbiddenException();
-
-		const isPending = await this.userService.isPending(id1, blockedUserId);
-		const isPendingOf = await this.userService.isPending(blockedUserId, id1);
-		const isFriend = await this.userService.isFriend(id1, blockedUserId);
-
-		if (isPendingOf === 1)
-			await this.userService.refuseFriendRequest(blockedUserId, id1);
-		if (isPending === 1)
-			await this.userService.refuseFriendRequest(id1, blockedUserId);
-		if (isFriend === 1)
-			await this.userService.deleteFriend(id1, blockedUserId);
-
-		const updatedUser = await this.userService.blockUser(id1, blockedUserId);
-
-		if (!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
 
 	@UseGuards(JwtAuthGuard)
 	@Post('/unblock-user/:blockedUserId')
 	async unblockUser(
 		@Req() req: AuthRequest,
-		@Param('blockedUserId', ParseIntPipe) blockedUserId: number): Promise<User> {
-		const id1 = Number(req.user.userId);
+		@Param('blockedUserId', ParseIntPipe) blockedUserId: number) {
+		const viewerId = req.user.userId;
 
-		const updatedUser = await this.userService.unblockUser(id1, blockedUserId);
-
-		if (!isDef(updatedUser))
+		const success = await this.userService.unblockUser(viewerId, blockedUserId);
+		if (!success)
 			throw new NotFoundException();
-		return updatedUser;
 	}
 
 	/*------------------------------FRIEND-REQUEST--------------------------*/
 
 	@UseGuards(JwtAuthGuard)
-	@Post('/send-friend-request/:friendId')
-	async sendFriendRequest(
-		@Req() req: AuthRequest,
-		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
-		
-		const id1 = Number(req.user.userId);
-
-		const isFriend = await prisma.user.findUnique({
-			where: {id: id1},
-			include: {
-				pendingOf: {
-					where: {id: friendId}
-			}
-		}});
-
-		const isBlocked = await this.userService.isBlocked(id1, friendId);
-		const isBlockedOf = await this.userService.isBlocked(friendId, id1);
-
-		if (isBlocked === 1 || isBlockedOf === 1)
-			throw new ForbiddenException();
-
-		if (isFriend && isFriend.pendingOf && isFriend?.pendingOf.length > 0)
-		{
-			const updatedUser = await this.userService.addFriend(id1, friendId);
-			await this.userService.addFriend(friendId, id1);
-
-			if(!isDef(updatedUser))
-				throw new NotFoundException();
-			return updatedUser;
-		}
-
-		const updatedUser = await this.userService.sendFriendRequest(id1, friendId);
-
-		if(!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
-
-	@UseGuards(JwtAuthGuard)
-	@Post('/refuse-friend-request/:friendId')
-	async refuseFriendRequest(
-		@Req() req: AuthRequest,
-		@Param('friendId', ParseIntPipe) friendId: number): Promise<User> {
-		const id1 = Number(req.user.userId);
-
-		const updatedUser = await this.userService.refuseFriendRequest(id1, friendId);
-
-		if (!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
-
-	@UseGuards(JwtAuthGuard)
 	@Get('/pending')
-	async getPending(@Req() req: AuthRequest): Promise<User[]> {
-		const uid = Number(req.user.userId)
+	async getPending(@Req() req: AuthRequest): Promise<UserDTO[]> {
+		const uid = req.user.userId
 		const user = await prisma.user.findUnique({
 			where: { id: uid },
 			include: { pendingOf: true }
