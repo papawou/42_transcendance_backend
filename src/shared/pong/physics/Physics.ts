@@ -1,8 +1,10 @@
 import { interVec } from "../utils/Vector";
 import { GameEngine } from "../GameEngine";
-import { GameObject } from "../GameObject";
+import { GameObject, isGameObjectBox } from "../GameObject";
 import { CollisionManifold, collisionDetection, collisionResolve } from "./collision";
 import { GameObjectSide, PhysicsData } from "../pong";
+import { isDef } from "@/technical/isDef";
+import { BodyBox } from "./rigid/Box";
 
 export class Physics<T extends GameObjectSide> {
     PHYSICS_FPS: number = 1 / 60;
@@ -32,6 +34,24 @@ export class Physics<T extends GameObjectSide> {
         this.accumulator += frameTime;
         while (this.accumulator >= this.PHYSICS_FPS) {
             sc.objs.forEach((o) => this.preLoop(o))
+
+            //prevent players go outside of game
+            for (const [key, value] of game.playersBar) {
+                const bar: GameObject | undefined = game.sc.getObj(value)
+                if (!isDef(bar) || !isGameObjectBox(bar)) {
+                    continue;
+                }
+                const top = bar.body.p.y - bar.body.g.halfDim.y
+                if (top < 0) {
+                    bar.body.p.y -= top
+                }
+                const bot = bar.body.p.y + bar.body.g.halfDim.y
+                if (bot > game.height)
+                {
+                    bar.body.p.y -= (bot - game.height)
+                }
+            }
+
             const manifolds = collisionDetection(sc.objs)
             for (const manifold of manifolds) {
                 this.preCollisionResolve(manifold, game)
