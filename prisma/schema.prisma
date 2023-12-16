@@ -22,27 +22,23 @@ model User {
     pending   User[] @relation("pending")
     pendingOf User[] @relation("pending")
 
-    PlayerGame PlayerGame[]
+    winGames  Game[] @relation("winGames")
+    loseGames Game[] @relation("loseGames")
 }
 
 model Game {
-    id String @id
-
-    players PlayerGame[]
-
+    id   String   @id
     type GameType
-}
 
-model PlayerGame {
-    gameId String
-    game   Game   @relation(fields: [gameId], references: [id])
+    winnerId Int
+    winner   User @relation("winGames", fields: [winnerId], references: [id])
+    loserId  Int
+    loser    User @relation("loseGames", fields: [loserId], references: [id])
 
-    userId Int
-    user   User @relation(fields: [userId], references: [id])
+    winnerScore Int
+    loserScore  Int
 
-    score Int
-
-    @@id([gameId, userId])
+    createdAt String
 }
 
 enum GameType {

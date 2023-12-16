@@ -8,7 +8,7 @@ import { isDef } from "@/technical/isDef";
 import { Injectable } from "@nestjs/common";
 import { GameType } from "@prisma/client";
 import { randomUUID } from "crypto";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 
 type Duel = { createdAt: dayjs.Dayjs, targetId: number }
@@ -21,15 +21,17 @@ export class GameService {
 
 	async addHistoryMatch(game: GameEngineData) {
 		const players = game.players.map(p => p.user).filter(isDef).map(p => ({ userId: p.userId, score: p.score }))
+		const winner = players.reduce((prev, curr) => curr.score > prev.score ? curr : prev)
+		const loser = players.reduce((prev, curr) => curr.score < prev.score ? curr : prev)
 		await prisma.game.create({
 			data: {
 				id: game.gameId,
 				type: game.type,
-				players: {
-					createMany: {
-						data: players
-					}
-				}
+				winnerScore: winner.score,
+				winnerId: winner.userId,
+				loserScore: loser.score,
+				loserId: loser.userId,
+				createdAt: dayjs().toISOString()
 			}
 		})
 	}
