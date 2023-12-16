@@ -42,7 +42,7 @@ export class GameDTO {
 
 export class UserHistoryDTO {
     @IsNumber()
-    userId!: number
+    id!: number
 
     @IsNumber()
     rank!: number
