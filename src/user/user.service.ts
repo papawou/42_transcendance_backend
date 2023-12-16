@@ -1,4 +1,6 @@
+import { isDef } from '@/technical/isDef';
 import { Injectable } from '@nestjs/common';
+import { User } from '@prisma/client';
 import prisma from 'src/database/prismaClient';
 
 @Injectable()
@@ -13,6 +15,11 @@ export class UserService {
 		return user;
 	}
 
+	getLeaderboard = async () => {
+		const ranks = await prisma.$queryRaw<Array<{ id: number, name: string, rank: number }> | null>`SELECT id, name, (RANK() OVER (ORDER BY "User".elo DESC))::int as rank FROM "User"`;
+		return ranks
+	}
+
 	getUserHistory = async (userId: number) => {
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
@@ -22,7 +29,16 @@ export class UserService {
 			}
 		})
 
-		return user
+		if (!isDef(user)) {
+			return undefined
+		}
+
+		const rank = await prisma.$queryRaw<{ rank: number } | null>`SELECT ranks.rank::int FROM (SELECT id, RANK() OVER (ORDER BY "User".elo DESC) as rank FROM "User") as ranks WHERE id=${userId}`;
+		if (!isDef(rank)) {
+			return undefined
+		}
+
+		return { ...user, rank: rank.rank }
 	}
 
 	getMetaUser = async (userId: number) => {

@@ -24,6 +24,8 @@ model User {
 
     winGames  Game[] @relation("winGames")
     loseGames Game[] @relation("loseGames")
+
+    elo Int @default(1500)
 }
 
 model Game {

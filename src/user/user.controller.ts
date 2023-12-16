@@ -5,7 +5,7 @@ import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { User } from '@prisma/client';
 import { isDef } from '@/technical/isDef';
-import { UserDTO, UserHistoryDTO } from './user.dto';
+import { LeaderboardUserDTO, UserDTO, UserHistoryDTO } from './user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -102,6 +102,16 @@ export class UserController {
 
 		if (!isDef(user))
 			throw new NotFoundException();
-		return { wins: user.winGames, loses: user.loseGames };
+		return { userId: user.id, rank: user.rank, wins: user.winGames, loses: user.loseGames };
+	}
+
+	@Get('/leaderboard')
+	async getLeaderboard(): Promise<LeaderboardUserDTO[]> {
+		const leaderboard = await this.userService.getLeaderboard()
+
+		if (!isDef(leaderboard)) {
+			throw new NotFoundException()
+		}
+		return leaderboard
 	}
 }

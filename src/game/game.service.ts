@@ -34,6 +34,15 @@ export class GameService {
 				createdAt: dayjs().toISOString()
 			}
 		})
+
+		await prisma.user.update({
+			where: { id: winner.userId },
+			data: { elo: this.getNewRating(winner.userId, loser.userId, true) }
+		})
+		await prisma.user.update({
+			where: { id: loser.userId },
+			data: { elo: this.getNewRating(loser.userId, winner.userId, false) }
+		})
 	}
 
 	//GAMES
@@ -132,5 +141,11 @@ export class GameService {
 	isDuelValid(duel: Duel) {
 		const timeoutInvitation = 60
 		return dayjs().diff(duel.createdAt, "seconds") < timeoutInvitation
+	}
+
+	getNewRating(viewerRating: number, opponentRating: number, isWin: boolean, kFactor: number = 30): number {
+		const actualScore = isWin ? 1 : 0
+		const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - viewerRating) / 400));;
+		return viewerRating + kFactor * (actualScore - expectedScore);
 	}
 }

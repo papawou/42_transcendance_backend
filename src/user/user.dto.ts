@@ -1,6 +1,6 @@
 import { Game, GameType } from "@prisma/client"
 import { Type } from "class-transformer"
-import { IsDateString, IsDefined, IsEnum, IsNotEmptyObject, IsNumber, IsString, ValidateNested } from "class-validator"
+import { IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested } from "class-validator"
 
 export class UserDTO {
     @IsNumber()
@@ -41,6 +41,12 @@ export class GameDTO {
 }
 
 export class UserHistoryDTO {
+    @IsNumber()
+    userId!: number
+
+    @IsNumber()
+    rank!: number
+
     @ValidateNested({ each: true })
     @Type(() => GameDTO)
     wins!: GameDTO[]
@@ -48,4 +54,13 @@ export class UserHistoryDTO {
     @ValidateNested({ each: true })
     @Type(() => GameDTO)
     loses!: GameDTO[]
+}
+
+export class LeaderboardUserDTO {
+    @IsNumber()
+    id!: number
+    @IsString()
+    name!: string
+    @IsNumber()
+    rank!: number
 }
