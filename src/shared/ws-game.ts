@@ -83,7 +83,7 @@ export type WsGameEvents = {
         out: GameEngineData | WS_NULL
     },
     [WsGame.debug]: {
-        in?: { userId?: number, gameId?: string },
+        in: WsGameDebug,
         out: null
     }
 }

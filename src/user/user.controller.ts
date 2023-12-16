@@ -5,7 +5,7 @@ import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { User } from '@prisma/client';
 import { isDef } from '@/technical/isDef';
-import { UserDTO } from './user.dto';
+import { UserDTO, UserHistoryDTO } from './user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -94,5 +94,14 @@ export class UserController {
 		if (!isDef(user))
 			throw new NotFoundException();
 		return user.pendingOf;
+	}
+
+	@Get(':id/user/history')
+	async getUserHistory(@Param('id', ParseIntPipe) id: number): Promise<UserHistoryDTO> {
+		const user = await this.userService.getUserHistory(id);
+
+		if (!isDef(user))
+			throw new NotFoundException();
+		return { wins: user.winGames, loses: user.loseGames };
 	}
 }

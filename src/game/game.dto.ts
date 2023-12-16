@@ -1,5 +1,5 @@
-import { WsGame, WsGameJoinRoom, WsGameLeaveRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
-import { IsBoolean, IsNumber, IsString } from "class-validator";
+import { WsGame, WsGameDebug, WsGameJoinRoom, WsGameLeaveRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
+import { IsBoolean, IsNumber, IsString, isString } from "class-validator";
 
 class WsGameRoomDTO implements WsGameRoom {
     @IsString()
@@ -19,11 +19,20 @@ class WsGameSendKeyDTO extends WsGameRoomDTO implements WsGameSendKey {
 
 class WsGameSetReadyDTO extends WsGameRoomDTO implements WsGameSetReady { }
 
+class WsGameDebugDTO implements WsGameDebug {
+    @IsString()
+    userId?: string
+    @IsString()
+    gameId?: string
+}
+
+
 export type WsGameDTO = {
     [WsGame.joinRoom]: WsGameJoinRoomDTO,
     [WsGame.leaveRoom]: WsGameLeaveRoomDTO,
     [WsGame.sendKey]: WsGameSendKeyDTO,
-    [WsGame.setReady]: WsGameSetReadyDTO
+    [WsGame.setReady]: WsGameSetReadyDTO,
+    [WsGame.debug]: WsGameDebugDTO
 }
 
 export class DuelInviteDTO {

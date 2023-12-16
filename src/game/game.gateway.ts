@@ -1,6 +1,6 @@
 import { GameEngineServer } from "@/pong/GameEngineServer";
 import { isDef } from "@/technical/isDef";
-import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer, WsResponse } from "@nestjs/websockets";
 import { Server } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -14,7 +14,7 @@ import { GameService } from "./game.service";
 import { GameType } from "@/shared/pong/pong";
 
 @WebSocketGateway({ cors: true })
-@UsePipes(new ValidationPipe())
+@UsePipes()
 export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	private cbIntervalSearch: NodeJS.Timeout;
 
@@ -66,14 +66,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 		this.leavePlayer(game, client);
 	}
 
+	@UsePipes(new ValidationPipe())
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.debug)
-	handleDebug(@ConnectedSocket() client: AuthSocket, @MessageBody() body: WsGameIn<WsGame.debug>) {
-		return {
-			games: Array.from(this.gameService.getGames()).map(g => g[1].toData()).filter(g => !isDef(body?.gameId) || g.gameId === body?.gameId),
-			users: Array.from(this.gameService.getUserGames()).filter(u => !isDef(body?.userId) || u[0] === body?.userId).map(u => u[1]),
-			duels: Array.from(this.gameService.duels)
-		}
+	handleDebug(@ConnectedSocket() client: AuthSocket, @MessageBody() body: WsGameDTO[WsGame.debug]) {
+		console.log("debug", body)
 	}
 
 	//meta
@@ -96,7 +93,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	}
 
 	//---------------MAIN
-	
+
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.joinRoom)

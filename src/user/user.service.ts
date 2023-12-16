@@ -13,6 +13,18 @@ export class UserService {
 		return user;
 	}
 
+	getUserHistory = async (userId: number) => {
+		const user = await prisma.user.findUnique({
+			where: { id: userId },
+			include: {
+				winGames: { include: { winner: true, loser: true } },
+				loseGames: { include: { winner: true, loser: true } },
+			}
+		})
+
+		return user
+	}
+
 	getMetaUser = async (userId: number) => {
 		const user = await prisma.user.findUnique({
 			where: { id: userId },
