@@ -4,7 +4,7 @@ import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { isDef } from '@/technical/isDef';
-import { LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO, UserStatusDTO } from './user.dto';
+import { CancelFriendRequestDTO, LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO, UserStatusDTO } from './user.dto';
 import { GameService } from '@/game/game.service';
 
 @ApiTags('users')
@@ -148,5 +148,18 @@ export class UserController {
 			throw new NotFoundException()
 		}
 		return leaderboard
+	}
+
+
+	@UseGuards(JwtAuthGuard)
+	@Post('/friendRequest/cancel')
+	async cancelFriendRequest(@Req() req: AuthRequest, @Body() body: CancelFriendRequestDTO) {
+		const viewerId = req.user.userId
+		const taregtId = body.userId
+
+		const success = await this.userService.deleteFriendRequest(viewerId, taregtId)
+		if (!success) {
+			throw new NotFoundException()
+		}
 	}
 }

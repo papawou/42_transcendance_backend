@@ -29,6 +29,14 @@ export class UserExpandedDTO extends UserDTO {
     @ValidateNested({ each: true })
     @Type(() => UserDTO)
     blocked!: UserDTO[]
+
+    @ValidateNested({ each: true })
+    @Type(() => UserDTO)
+    pending!: UserDTO[]
+
+    @ValidateNested({ each: true })
+    @Type(() => UserDTO)
+    pendingOf!: UserDTO[]
 }
 
 export class GameDTO {
@@ -86,4 +94,10 @@ export class LeaderboardUserDTO {
     rank!: number
     @IsNumber()
     elo!: number
+}
+
+
+export class CancelFriendRequestDTO {
+    @IsNumber()
+    userId!: number
 }
