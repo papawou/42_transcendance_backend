@@ -26,6 +26,9 @@ model User {
     loseGames Game[] @relation("loseGames")
 
     elo Int @default(1500)
+
+    twoFactorEnabled Boolean @default(false)
+    secretKey        String?
 }
 
 model Game {
