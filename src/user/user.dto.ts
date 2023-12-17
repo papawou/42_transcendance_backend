@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { Game, GameType } from "@prisma/client"
 import { Type } from "class-transformer"
-import { IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested } from "class-validator"
+import { IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested, isNumber } from "class-validator"
 
 export class UserDTO {
     @IsNumber()
@@ -12,11 +12,13 @@ export class UserDTO {
     ft_id!: string
     @IsString()
     pic!: string
+    @IsNumber()
+    elo!: number
 }
 
 export class UserStatusDTO {
-    @ApiProperty({ enum: ['SEARCH', 'INGAME', 'OFFLINE', "ONLINE", "null"]})
-    status!: "SEARCH" | "INGAME" | "OFFLINE" | "ONLINE" |  "null"
+    @ApiProperty({ enum: ['SEARCH', 'INGAME', 'OFFLINE', "ONLINE", "null"] })
+    status!: "SEARCH" | "INGAME" | "OFFLINE" | "ONLINE" | "null"
 }
 
 export class UserExpandedDTO extends UserDTO {
@@ -63,6 +65,9 @@ export class UserHistoryDTO {
     @IsNumber()
     rank!: number
 
+    @IsNumber()
+    elo!: number
+
     @ValidateNested({ each: true })
     @Type(() => GameDTO)
     wins!: GameDTO[]
@@ -79,4 +84,6 @@ export class LeaderboardUserDTO {
     name!: string
     @IsNumber()
     rank!: number
+    @IsNumber()
+    elo!: number
 }

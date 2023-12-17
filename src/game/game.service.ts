@@ -5,6 +5,7 @@ import Scene from "@/shared/pong/Scene";
 import { GameEngineData } from "@/shared/pong/pong";
 import { UserGame } from "@/shared/shared";
 import { isDef } from "@/technical/isDef";
+import { UserService } from "@/user/user.service";
 import { Injectable } from "@nestjs/common";
 import { GameType } from "@prisma/client";
 import { randomUUID } from "crypto";
@@ -19,10 +20,20 @@ export class GameService {
 	userGame: Map<number, UserGame> = new Map()
 	duels: Map<number, Duel> = new Map()
 
+	constructor(private readonly userService: UserService) { }
+
 	async addHistoryMatch(game: GameEngineData) {
 		const players = game.players.map(p => p.user).filter(isDef).map(p => ({ userId: p.userId, score: p.score }))
 		const winner = players.reduce((prev, curr) => curr.score > prev.score ? curr : prev)
 		const loser = players.reduce((prev, curr) => curr.score < prev.score ? curr : prev)
+
+		const userW = await this.userService.getUser(winner.userId)
+		const userL = await this.userService.getUser(loser.userId)
+
+		if (!isDef(userW) || !isDef(userL)) {
+			return
+		}
+
 		await prisma.game.create({
 			data: {
 				id: game.gameId,
@@ -37,11 +48,11 @@ export class GameService {
 
 		await prisma.user.update({
 			where: { id: winner.userId },
-			data: { elo: this.getNewRating(winner.userId, loser.userId, true) }
+			data: { elo: this.getNewRating(userW.elo, userL.elo, true) }
 		})
 		await prisma.user.update({
 			where: { id: loser.userId },
-			data: { elo: this.getNewRating(loser.userId, winner.userId, false) }
+			data: { elo: this.getNewRating(userL.elo, userW.elo, false) }
 		})
 	}
 

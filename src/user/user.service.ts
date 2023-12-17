@@ -16,7 +16,7 @@ export class UserService {
 	}
 
 	getLeaderboard = async () => {
-		const ranks = await prisma.$queryRaw<Array<{ id: number, name: string, rank: number }> | null>`SELECT id, name, (RANK() OVER (ORDER BY "User".elo DESC))::int as rank FROM "User"`;
+		const ranks = await prisma.$queryRaw<Array<{ id: number, name: string, rank: number, elo: number }> | null>`SELECT id, name, elo, (RANK() OVER (ORDER BY "User".elo DESC))::int as rank FROM "User"`;
 		return ranks
 	}
 

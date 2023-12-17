@@ -137,7 +137,7 @@ export class UserController {
 
 		if (!isDef(user))
 			throw new NotFoundException();
-		return { id: user.id, rank: user.rank, wins: user.winGames, loses: user.loseGames };
+		return { ...user, rank: user.rank, wins: user.winGames, loses: user.loseGames };
 	}
 
 	@Get('/leaderboard')
