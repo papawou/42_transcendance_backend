@@ -4,13 +4,11 @@ import { Socket } from 'socket.io';
 import { UserService } from 'src/user/user.service';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { AuthSocket } from '@/events/auth-socket.middleware';
-import { isDef } from '@/technical/isDef';
 import { User } from '@prisma/client';
 
 export interface UserDto {
 	id: number;
 	name: string;
-	blocked?: UserDto[]
 }
 export interface MessageDto {
 	userId: number;
