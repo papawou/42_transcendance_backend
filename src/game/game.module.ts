@@ -2,7 +2,6 @@ import { AuthModule } from "@/auth/auth.module";
 import { Module } from "@nestjs/common";
 import { GameController } from "./game.controller";
 import { GameService } from "./game.service";
-import { UserGateway } from "@/user/user.gateway";
 import { GameGateway } from "./game.gateway";
 
 @Module({

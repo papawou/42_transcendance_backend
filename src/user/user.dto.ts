@@ -1,3 +1,4 @@
+import { ApiProperty } from "@nestjs/swagger"
 import { Game, GameType } from "@prisma/client"
 import { Type } from "class-transformer"
 import { IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested } from "class-validator"
@@ -11,6 +12,21 @@ export class UserDTO {
     ft_id!: string
     @IsString()
     pic!: string
+}
+
+export class UserStatusDTO {
+    @ApiProperty({ enum: ['SEARCH', 'INGAME', 'OFFLINE', "ONLINE", "null"]})
+    status!: "SEARCH" | "INGAME" | "OFFLINE" | "ONLINE" |  "null"
+}
+
+export class UserExpandedDTO extends UserDTO {
+    @ValidateNested({ each: true })
+    @Type(() => UserDTO)
+    friends!: UserDTO[]
+
+    @ValidateNested({ each: true })
+    @Type(() => UserDTO)
+    blocked!: UserDTO[]
 }
 
 export class GameDTO {
