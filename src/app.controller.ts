@@ -8,9 +8,4 @@ import { isDef } from './technical/isDef';
 export class AppController {
   constructor(private readonly appService: AppService) { }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  getProfile(@Req() req: AuthRequest) {
-    return req.user;
-  }
 }
