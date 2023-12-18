@@ -31,13 +31,13 @@ export class UserController {
 
 	@UseGuards(JwtAuthGuard)
 	@Get("/me")
-	async getMe(
-		@Req() req: AuthRequest,): Promise<UserExpandedDTO> {
+	async getMe(@Req() req: AuthRequest,): Promise<UserExpandedDTO> {
 		const user = await this.userService.getUser(req.user.userId)
 		if (!isDef(user)) {
 			throw new NotFoundException()
 		}
-		return user;
+		const { ft_id, tfaSecret, ...payload } = user
+		return payload;
 	}
 
 	@UseGuards(JwtAuthGuard)

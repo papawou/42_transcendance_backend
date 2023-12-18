@@ -5,8 +5,11 @@ CREATE TYPE "GameType" AS ENUM ('RANKED', 'CASUAL');
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "ft_id" TEXT NOT NULL DEFAULT 'couz',
     "pic" TEXT NOT NULL DEFAULT 'jaubarea.png',
+    "elo" INTEGER NOT NULL DEFAULT 1500,
+    "tfaSecret" TEXT,
+    "tfaValid" BOOLEAN NOT NULL DEFAULT false,
+    "ft_id" TEXT NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -44,6 +47,9 @@ CREATE TABLE "_pending" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_ft_id_key" ON "User"("ft_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_friends_AB_unique" ON "_friends"("A", "B");

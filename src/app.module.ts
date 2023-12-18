@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ChatModule } from './chat/chat.module';
 import { GameModule } from './game/game.module';
+import { TfaModule } from './tfa/tfa.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { GameModule } from './game/game.module';
       isGlobal: true
     }),
     GameModule,
-    ChatModule
+    ChatModule,
+    TfaModule
   ],
   controllers: [AppController],
   providers: [AppService],

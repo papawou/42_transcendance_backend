@@ -233,4 +233,19 @@ export class UserService {
 
 		return undefined;
 	}
+
+	createUser = async (name: string, ft_id: string, pic: string) => {
+		try {
+			return await prisma.user.create({
+				data: {
+					name: name,
+					ft_id: ft_id,
+					pic: pic,
+				},
+			});
+		}
+		catch {
+			return undefined;
+		}
+	}
 }
