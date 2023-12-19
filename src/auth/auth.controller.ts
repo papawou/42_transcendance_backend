@@ -25,7 +25,6 @@ export class AuthController {
     @Post('ft/callback')
     async ftCallback(@Body() body: FtCallbackDTO, @Res() response: Response) {
         const code = body.code
-
         const params = new URLSearchParams()
         params.append('grant_type', 'authorization_code')
         params.append('client_id', process.env.FT_CLIENT_ID!)
@@ -67,7 +66,7 @@ export class AuthController {
                     httpOnly: true,
                     maxAge: 1000 * 60 * 5,
                 });
-                response.redirect("/2fa");
+                response.status(200).json({ redirect: "2fa" });
                 return
             }
             response.status(200).json(this.authService.login(findUser))

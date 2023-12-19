@@ -37,6 +37,7 @@ export class UserController {
 			throw new NotFoundException()
 		}
 		const { ft_id, tfaSecret, ...payload } = user
+
 		return payload;
 	}
 

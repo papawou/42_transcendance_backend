@@ -77,7 +77,6 @@ export class TfaService {
   }
 
   check(otp: string, tfaSecret: string) {
-    console.log(otp, tfaSecret)
     return authenticator.verify({ token: otp, secret: tfaSecret })
   }
 }
