@@ -1,18 +1,17 @@
-import { Body, Controller, Post, Get, Req, UnauthorizedException, UseGuards, NotFoundException, ConsoleLogger } from "@nestjs/common";
+import { Body, Controller, Post, UnauthorizedException, NotFoundException, Res } from "@nestjs/common";
 import { isDef } from "src/technical/isDef";
 import { AuthService } from "./auth.service";
-import { DisableTwoFactorDTO, EnableTwoFactorDTO, LoginDTO, ValidateTwoFactorDTO } from "./auth.dto";
-import { from, lastValueFrom, map } from "rxjs";
-import { Request } from 'express';
-import { HttpService } from "@nestjs/axios";
+import { FtCallbackDTO, LoginDTO } from "./auth.dto";
 import { URLSearchParams } from "url";
-import { ConfigModule } from "@nestjs/config";
 import prisma from "@/database/prismaClient";
 import axios from "axios";
+import { isNumber, isString } from "class-validator";
+import { Response } from "express";
+import { UserService } from "@/user/user.service";
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(private authService: AuthService, private userService: UserService) { }
 
     @Post('login')
     async login(@Body() body: LoginDTO) {
@@ -23,35 +22,15 @@ export class AuthController {
         return this.authService.login(user);
     }
 
-    // @Post('2fa/enable')
-    // async enableTwoFactor(@Body() enableTwoFactorDTO: EnableTwoFactorDTO) {
-    //     return await this.authService.enableTwoFactor(enableTwoFactorDTO);
-    // }
-
-    // // POST auth/2fa/validate
-    // @Post('2fa/validate')
-    // async validateTwoFactor(@Body() validateTwoFactorDTO: ValidateTwoFactorDTO) {
-    //     return await this.authService.validateTwoFactor(validateTwoFactorDTO);
-    // }
-
-    // // POST auth/2fa/disable
-    // @Post('2fa/disable')
-    // async disableTwoFactor(@Body() disableTwoFactorDTO: DisableTwoFactorDTO) {
-    //     return await this.authService.disableTwoFactor(disableTwoFactorDTO);
-    // }
-
-    // POST auth/ft/callback
     @Post('ft/callback')
-    async ftCallback(@Req() req: Request) {
-        if (!isDef(req.body.code)) {
-            throw new NotFoundException();
-        }
+    async ftCallback(@Body() body: FtCallbackDTO, @Res() response: Response) {
+        const code = body.code
 
         const params = new URLSearchParams()
         params.append('grant_type', 'authorization_code')
         params.append('client_id', process.env.FT_CLIENT_ID!)
         params.append('client_secret', process.env.FT_CLIENT_SECRET!)
-        params.append('code', req.body.code)
+        params.append('code', code)
         params.append('redirect_uri', process.env.FT_REDIRECT_URI!)
 
         const post = await axios
@@ -73,46 +52,30 @@ export class AuthController {
             .catch((err) => {
                 throw new NotFoundException()
             });
+        const intraName = get?.login
+        const intraPic = get?.image?.link
+        const intraId = get?.id
 
-        const findUser = await prisma.user.findUnique({ where: { name: get.login } });
-        if (isDef(findUser)) {
-            // MATT : TFA HERE
-            // if (hasEnabledTFA(get.login)) {
-            // then send email with tfa code
-            // then return tfa code
-            // }
-            // if ( findUser && !findUser.twoFactorEnabled) {
-            //     const secretKey = speakeasy.generateSecret({ length: 20 }).base32;
-
-            //     const otpAuthUrl = speakeasy.otpauthURL({
-            //         secret: secretKey,
-            //         label: 'Transcendence',
-            //         issuer: 'Transcendence',
-            //     });
-            //     const qrCodeImage = await qrcode.toDataURL(otpAuthUrl);
-            //     console.log(">>> user already in db");
-            //     await prisma.user.update({ // prevent duplicate
-            //         where: { name: get.login },
-            //         data: { 
-            //             ft_id: '' + get.id,
-            //             pic: get.image.link,
-            //             twoFactorEnabled: true,
-            //             secretKey: secretKey,
-            //     }, });
-            //     return { qrCodeImage };
-            return await this.authService.login(findUser); // return jwt
+        if (!isString(intraName) || !isString(intraPic) || (!isString(intraId) && !isNumber(intraId))) {
+            throw new NotFoundException()
         }
 
-        const createUser = await prisma.user.create({
-            data: {
-                name: get.login,
-                ft_id: '' + get.id,
-                pic: get.image.link,
-            },
-        });
-        if (!isDef(createUser))
+        const findUser = await prisma.user.findUnique({ where: { ft_id: intraId.toString() } });
+        if (isDef(findUser)) {
+            if (findUser.tfaValid) {
+                response.cookie('2fa', this.authService.tfaJwtSign(findUser.id), {
+                    httpOnly: true,
+                    maxAge: 1000 * 60 * 5,
+                });
+                response.redirect("/2fa");
+                return
+            }
+            response.status(200).json(this.authService.login(findUser))
+            return;
+        }
+        const createdUser = await this.userService.createUser(intraName, intraId.toString(), intraPic);
+        if (!isDef(createdUser))
             throw new NotFoundException();
-
-        return await this.authService.login(createUser);
+        response.status(200).json(this.authService.login(createdUser))
     }
 }

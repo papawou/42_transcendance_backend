@@ -1,15 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { Game, GameType } from "@prisma/client"
 import { Type } from "class-transformer"
-import { IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested, isNumber } from "class-validator"
+import { IsBoolean, IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested, isNumber } from "class-validator"
 
 export class UserDTO {
     @IsNumber()
     id!: number
     @IsString()
     name!: string
-    @IsString()
-    ft_id!: string
     @IsString()
     pic!: string
     @IsNumber()
@@ -37,6 +35,9 @@ export class UserExpandedDTO extends UserDTO {
     @ValidateNested({ each: true })
     @Type(() => UserDTO)
     pendingOf!: UserDTO[]
+
+    @IsBoolean()
+    tfaValid!: boolean
 }
 
 export class GameDTO {

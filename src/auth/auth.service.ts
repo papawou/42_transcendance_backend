@@ -20,51 +20,18 @@ export class AuthService {
         return user;
     }
 
-    async login(user: User) {
+    login(user: User) {
         const payload: UserJWTPayload = { name: user.name, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
         };
     }
 
-    // async enableTwoFactor(enableTwoFactorDTO: EnableTwoFactorDTO) {
-    //     const { userId, secretKey } = enableTwoFactorDTO;
-    //     await prisma.user.update({
-    //         where: { id: userId },
-    //         data: {
-    //             twoFactorEnabled: true,
-    //             secretKey: secretKey,
-    //         },
-    //     });
-    //     return { message: '2FA enabled successfully' };
-    // }
+    tfaJwtSign(userId: number) {
+        return this.jwtService.sign({ sub: userId, for: "2fa" })
+    }
 
-    // async validateTwoFactor(validateTwoFactorDTO: ValidateTwoFactorDTO) {
-    //     const { userId, twoFactorCode } = validateTwoFactorDTO;
-    //     const user = await prisma.user.findUnique({ where: { id: userId } });
-    //     if (!user || !user.twoFactorEnabled || !user.secretKey) {
-    //         throw new UnauthorizedException('2FA not enabled for this user');
-    //     }
-    //     const verified = speakeasy.totp.verify({
-    //         secret: user.secretKey,
-    //         encoding: 'base32',
-    //         token: twoFactorCode,
-    //     });
-    //     if (!verified) {
-    //         throw new UnauthorizedException('Invalid 2FA code');
-    //     }
-    //     return { message: '2FA validated successfully' };
-    // }
-
-    // async disableTwoFactor(disableTwoFactorDTO: DisableTwoFactorDTO) {
-    //     const { userId } = disableTwoFactorDTO;
-    //     await prisma.user.update({
-    //         where: { id: userId },
-    //         data: {
-    //             twoFactorEnabled: false,
-    //             secretKey: null,
-    //         },
-    //     });
-    //     return { message: '2FA disabled successfully' };
-    // }
+    tfaJwtVerfiy(jwt: string) {
+        return this.jwtService.verify(jwt)
+    }
 }

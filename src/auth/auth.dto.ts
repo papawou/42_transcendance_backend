@@ -5,23 +5,7 @@ export class LoginDTO {
   name!: string;
 }
 
-export class EnableTwoFactorDTO extends LoginDTO {
-  @IsNotEmpty()
-  userId!: number;
-
-  @IsNotEmpty()
-  secretKey!: string;
-}
-
-export class ValidateTwoFactorDTO extends LoginDTO {
-  @IsNotEmpty()
-  userId!: number;
-
-  @IsNotEmpty()
-  twoFactorCode!: string;
-}
-
-export class DisableTwoFactorDTO extends LoginDTO {
-  @IsNotEmpty()
-  userId!: number;
+export class FtCallbackDTO {
+  @IsString()
+  code!: string;
 }

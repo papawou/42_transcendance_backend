@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-    id    Int    @id @default(autoincrement())
-    name  String @unique
-    ft_id String @default("couz")
-    pic   String @default("jaubarea.png")
+    id   Int    @id @default(autoincrement())
+    name String @unique
+
+    pic String @default("jaubarea.png")
 
     friends   User[] @relation("friends")
     friendsOf User[] @relation("friends")
@@ -27,8 +27,10 @@ model User {
 
     elo Int @default(1500)
 
-    twoFactorEnabled Boolean @default(false)
-    secretKey        String?
+    tfaSecret String?
+    tfaValid  Boolean @default(false)
+
+    ft_id String @unique
 }
 
 model Game {
