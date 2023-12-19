@@ -1,29 +1,20 @@
-import { Body, Controller, Post, UnauthorizedException, NotFoundException, Res } from "@nestjs/common";
+import { Body, Controller, Post, UnauthorizedException, NotFoundException, Res, UseGuards, Req } from "@nestjs/common";
 import { isDef } from "src/technical/isDef";
 import { AuthService } from "./auth.service";
-import { FtCallbackDTO, LoginDTO } from "./auth.dto";
+import { AccessTokenDTO, FtCallbackDTO, TfaDTO, TfaRedirectDTO } from "./auth.dto";
 import { URLSearchParams } from "url";
 import prisma from "@/database/prismaClient";
 import axios from "axios";
 import { isNumber, isString } from "class-validator";
-import { Response } from "express";
 import { UserService } from "@/user/user.service";
+import { AuthRequest, JwtAuthGuard } from "./jwt-auth.guard";
 
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService, private userService: UserService) { }
 
-    @Post('login')
-    async login(@Body() body: LoginDTO) {
-        const user = await this.authService.validateUser(body.name);
-        if (!isDef(user)) {
-            throw new UnauthorizedException();
-        }
-        return this.authService.login(user);
-    }
-
     @Post('ft/callback')
-    async ftCallback(@Body() body: FtCallbackDTO, @Res() response: Response) {
+    async ftCallback(@Body() body: FtCallbackDTO): Promise<AccessTokenDTO | TfaRedirectDTO> {
         const code = body.code
         const params = new URLSearchParams()
         params.append('grant_type', 'authorization_code')
@@ -62,19 +53,67 @@ export class AuthController {
         const findUser = await prisma.user.findUnique({ where: { ft_id: intraId.toString() } });
         if (isDef(findUser)) {
             if (findUser.tfaValid) {
-                response.cookie('2fa', this.authService.tfaJwtSign(findUser.id), {
-                    httpOnly: true,
-                    maxAge: 1000 * 60 * 5,
-                });
-                response.status(200).json({ redirect: "2fa" });
-                return
+                return { userId: findUser.id }
             }
-            response.status(200).json(this.authService.login(findUser))
-            return;
+            return this.authService.login(findUser)
         }
+
         const createdUser = await this.userService.createUser(intraName, intraId.toString(), intraPic);
         if (!isDef(createdUser))
             throw new NotFoundException();
-        response.status(200).json(this.authService.login(createdUser))
+        return this.authService.login(createdUser)
+    }
+
+
+
+    ///2fa
+    @UseGuards(JwtAuthGuard)
+    @Post('tfa/enable')
+    async enable(@Req() req: AuthRequest): Promise<string> {
+        const qrCodeImage = await this.authService.tfaEnable(req.user.userId);
+        if (!isDef(qrCodeImage)) {
+            throw new NotFoundException()
+        }
+        return qrCodeImage
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('tfa/activate')
+    async activate(@Req() req: AuthRequest, @Body() body: TfaDTO): Promise<true> {
+        const success = await this.authService.tfaActivate(req.user.userId, body.otp)
+        if (!isDef(success) || !success) {
+            throw new NotFoundException()
+        }
+        return success
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('tfa/disable')
+    async disable(@Req() req: AuthRequest): Promise<true> {
+        const success = await this.authService.tfaDisable(req.user.userId);
+        if (!isDef(success) || !success) {
+            throw new NotFoundException()
+        }
+        return success;
+    }
+
+    @Post('tfa/verify')
+    async verify(@Body() body: TfaDTO): Promise<AccessTokenDTO> {
+
+        const user = await this.authService.tfaVerify(body.userId, body.otp);
+        if (!isDef(user)) {
+            throw new NotFoundException()
+        }
+        return this.authService.login(user);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('tfa/isActive')
+    async isEnable(@Req() req: AuthRequest): Promise<boolean> {
+        const isTfa = await this.authService.hasTfa(req.user.userId)
+        if (!isDef(isTfa)) {
+            throw new NotFoundException();
+        }
+        return isTfa;
     }
 }

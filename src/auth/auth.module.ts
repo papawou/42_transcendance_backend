@@ -7,7 +7,6 @@ import { AuthController } from './auth.controller';
 import { ConfigService } from '@nestjs/config';
 import { WsJwtStrategy } from './ws-jwt.strategy';
 import { HttpModule } from '@nestjs/axios';
-import { TfaService } from '../tfa/tfa.service';
 import { UserModule } from '@/user/user.module';
 
 @Module({
@@ -24,7 +23,7 @@ import { UserModule } from '@/user/user.module';
         forwardRef(() => UserModule)
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, WsJwtStrategy, TfaService],
+    providers: [AuthService, JwtStrategy, WsJwtStrategy],
     exports: [JwtModule]
 })
 export class AuthModule { }

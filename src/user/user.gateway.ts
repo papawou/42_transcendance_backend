@@ -56,7 +56,6 @@ export class UserGateway implements OnGatewayConnection {
 			await this.userService.acceptFriendRequest(viewerId, targetId) //already pending request from target
 			: await this.userService.addFriendRequest(viewerId, targetId);
 		if (!sucess) {
-			console.log("sendFriendRequest")
 			return;
 		}
 
@@ -72,7 +71,6 @@ export class UserGateway implements OnGatewayConnection {
 		
 		const success = await this.userService.acceptFriendRequest(viewerId, senderId);
 		if (!success) {
-			console.log("acceptFriendRequest")
 			return;
 		}
 
@@ -91,7 +89,6 @@ export class UserGateway implements OnGatewayConnection {
 
 		const success = await this.userService.deleteFriendRequest(senderId, viewerId);
 		if (!success) {
-			console.log("refuseFriendRequest")
 			return
 		}
 
@@ -107,7 +104,6 @@ export class UserGateway implements OnGatewayConnection {
 
 		const success = await this.userService.deleteFriend(viewerId, targetId);
 		if (!success) {
-			console.log("deleteFriend")
 			return;
 		}
 
@@ -124,7 +120,6 @@ export class UserGateway implements OnGatewayConnection {
 
 		const success = await this.userService.blockUser(viewerId, targetId)
 		if (!success) {
-			console.log("blockFriend")
 			return;
 		}
 
