@@ -1,11 +1,27 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from "class-validator";
 
-export class LoginDTO {
+export class TfaDTO {
+  @IsNumber()
   @IsNotEmpty()
-  name!: string;
+  userId!: number
+
+  @IsString()
+  @IsNotEmpty()
+  otp!: string
 }
 
 export class FtCallbackDTO {
   @IsString()
   code!: string;
+}
+
+export class AccessTokenDTO {
+  @IsString()
+  access_token!: string
+}
+
+
+export class TfaRedirectDTO {
+  @IsNumber()
+  userId!: number
 }

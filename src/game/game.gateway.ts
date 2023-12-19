@@ -66,13 +66,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 		this.leavePlayer(game, client);
 	}
 
-	@UsePipes(new ValidationPipe())
-	@UseGuards(WsJwtAuthGuard)
-	@SubscribeMessage(WsGame.debug)
-	handleDebug(@ConnectedSocket() client: AuthSocket, @MessageBody() body: WsGameDTO[WsGame.debug]) {
-		console.log("debug", body)
-	}
-
 	//meta
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.metaGetUser)
