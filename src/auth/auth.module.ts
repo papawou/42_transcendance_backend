@@ -23,7 +23,7 @@ import { UserModule } from '@/user/user.module';
         forwardRef(() => UserModule)
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, WsJwtStrategy, TfaService],
+    providers: [AuthService, JwtStrategy, WsJwtStrategy],
     exports: [JwtModule]
 })
 export class AuthModule { }

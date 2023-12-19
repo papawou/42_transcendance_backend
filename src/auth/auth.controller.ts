@@ -64,8 +64,6 @@ export class AuthController {
         return this.authService.login(createdUser)
     }
 
-
-
     ///2fa
     @UseGuards(JwtAuthGuard)
     @Post('tfa/enable')
