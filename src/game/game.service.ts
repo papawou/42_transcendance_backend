@@ -45,6 +45,10 @@ export class GameService {
 				createdAt: dayjs().toISOString()
 			}
 		})
+		
+		if (game.type !== "RANKED") {
+			return;
+		}
 
 		await prisma.user.update({
 			where: { id: winner.userId },

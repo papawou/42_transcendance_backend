@@ -6,8 +6,8 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
-import { WsGameJoinRoomDTO, WsGameLeaveRoomDTO, WsGameSendKeyDTO, WsGameSetReadyDTO } from "./game.dto";
-import { WS_FAIL, WsGame, WsGameIn, WsGameOut } from "@/shared/ws-game";
+import { WsGameJoinRoomDTO, WsGameSendKeyDTO, WsGameSetReadyDTO } from "./game.dto";
+import { WS_FAIL, WsGame, WsGameOut } from "@/shared/ws-game";
 import { UserGame } from "@/shared/shared";
 import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
 import { GameService } from "./game.service";
@@ -132,8 +132,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.leaveRoom)
-	handleLeaveRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameLeaveRoomDTO): WsGameOut<WsGame.leaveRoom> {
-		const game = this.gameService.getGame(msg.gameId)
+	handleLeaveRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: undefined): WsGameOut<WsGame.leaveRoom> {
+		const gameId = this.gameService.getUserGame(client.user.userId)?.gameId
+		if (!isDef(gameId)) {
+			return;
+		}
+		const game = this.gameService.getGame(gameId)
 		if (!isDef(game)) {
 			return;
 		}
@@ -187,11 +191,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	postLoop(gameId: string) {
 		const game = this.gameService.getGame(gameId);
+
 		if (!isDef(game)) {
-			console.warn("postLoop - inconsistent")
 			return;
 		}
 		if (game.status === "CLOSED") {
+
 			this.closeGame(game)
 			this.gameService.addHistoryMatch(game.toData())
 			return;
@@ -207,6 +212,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 		if (game.status === "PENDING") {
 			this.closeGame(game, `${client.user.name} leaved the game`)
+		}
+		else if (game.status === "RUNNING") {
+			const player = Array.from(game.players).find(p => p[1]?.userId !== client.user.userId)
+			const playerWinId = player?.[0]
+			if (!isDef(playerWinId)) {
+				return false;
+			}
+			game.incrScore(playerWinId, 60)
+			this.postLoop(game.gameId)
 		}
 		return true;
 	}

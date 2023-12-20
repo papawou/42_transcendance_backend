@@ -108,3 +108,8 @@ export class ChangeUsernameDTO {
     @Length(1, 20)
     username!: string
 }
+
+export class FriendDTO {
+    @IsNumber()
+    friendId!: number
+}

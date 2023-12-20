@@ -1,4 +1,4 @@
-import { Inject, NotFoundException, ParseIntPipe, UseGuards } from "@nestjs/common";
+import { Inject, NotFoundException, ParseIntPipe, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io"
 import { UserService } from "./user.service";
@@ -7,6 +7,7 @@ import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
+import { FriendDTO } from "./user.dto";
 
 @WebSocketGateway({
 	cors: {
@@ -14,6 +15,7 @@ import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
 		credentials: true,
 	}
 })
+@UsePipes(new ValidationPipe())
 export class UserGateway implements OnGatewayConnection {
 
 	@WebSocketServer()
@@ -34,7 +36,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('sendFriendRequest')
-	async sendFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
+	async sendFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: FriendDTO) {
 		const viewerId = connectSocket.user.userId
 		const targetId = body.friendId
 
@@ -63,7 +65,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('acceptFriendRequest')
-	async acceptFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
+	async acceptFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: FriendDTO) {
 		const viewerId = connectSocket.user.userId
 		const senderId = body.friendId
 
@@ -81,7 +83,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('refuseFriendRequest')
-	async refuseFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
+	async refuseFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: FriendDTO) {
 		const viewerId = connectSocket.user.userId
 		const senderId = body.friendId
 
@@ -96,7 +98,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('deleteFriend')
-	async deleteFriend(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
+	async deleteFriend(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: FriendDTO) {
 		const viewerId = connectSocket.user.userId
 		const targetId = body.friendId
 
@@ -112,7 +114,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage('blockFriend')
-	async blockFriend(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
+	async blockFriend(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: FriendDTO) {
 		const viewerId = connectSocket.user.userId
 		const targetId = body.friendId
 

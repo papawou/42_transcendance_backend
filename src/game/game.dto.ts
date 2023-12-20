@@ -1,4 +1,4 @@
-import { WsGameJoinRoom, WsGameLeaveRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
+import { WsGameJoinRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
 import { ApiProperty } from "@nestjs/swagger";
 import { GameType } from "@prisma/client";
 import { IsBoolean, IsNumber, IsString } from "class-validator";
@@ -9,8 +9,6 @@ export class WsGameRoomDTO implements WsGameRoom {
 }
 
 export class WsGameJoinRoomDTO extends WsGameRoomDTO implements WsGameJoinRoom { }
-
-export class WsGameLeaveRoomDTO extends WsGameRoomDTO implements WsGameLeaveRoom { }
 
 export class WsGameSendKeyDTO extends WsGameRoomDTO implements WsGameSendKey {
     @IsString()

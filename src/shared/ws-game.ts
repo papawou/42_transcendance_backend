@@ -26,7 +26,6 @@ export interface WsGameRoom {
 }
 
 export interface WsGameJoinRoom extends WsGameRoom { }
-export interface WsGameLeaveRoom extends WsGameRoom { }
 export interface WsGameSendKey extends WsGameRoom {
     key: string,
     isUp: boolean
@@ -45,7 +44,7 @@ export type WsGameEvents = {
         out: true | false
     },
     [WsGame.leaveRoom]: {
-        in: WsGameLeaveRoom,
+        in: undefined,
         out: undefined
     },
     [WsGame.sendKey]: {

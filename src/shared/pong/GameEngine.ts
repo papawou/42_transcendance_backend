@@ -86,10 +86,10 @@ export class GameEngine<T extends GameObjectSide> {
         }
         switch (key) {
             case "w":
-                bar.body.v.y = -100;
+                bar.body.v.y = -200;
                 break;
             case "s":
-                bar.body.v.y = 100;
+                bar.body.v.y = 200;
                 break;
         }
     }
@@ -115,12 +115,12 @@ export class GameEngine<T extends GameObjectSide> {
     //
 
     //game logic
-    incrScore(playerId: string) {
+    incrScore(playerId: string, score?: number) {
         const player = this.players.get(playerId)
         if (!isDef(player)) {
             return;
         }
-        ++player.score
+        player.score += (score ?? 1)
         if (player.score >= (this.type === "TROLL" ? 50 : 5)) {
             this.stop(`Player ${player.userId} has won`)
         }
@@ -145,15 +145,6 @@ export class GameEngine<T extends GameObjectSide> {
             return false;
         }
         this.players.set(playerId, new Player(userId))
-        return true;
-    }
-
-    leavePlayer(userId: number): boolean {
-        const player = this.getPlayer(userId);
-        if (!isDef(player)) {
-            return false;
-        }
-        this.players.set(player.playerId, null);
         return true;
     }
 
