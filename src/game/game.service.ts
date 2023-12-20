@@ -5,6 +5,7 @@ import Scene from "@/shared/pong/Scene";
 import { GameEngineData } from "@/shared/pong/pong";
 import { UserGame } from "@/shared/shared";
 import { isDef } from "@/technical/isDef";
+import { UserWithStatusDTO } from "@/user/user.dto";
 import { UserService } from "@/user/user.service";
 import { Injectable } from "@nestjs/common";
 import { GameType } from "@prisma/client";
@@ -155,5 +156,20 @@ export class GameService {
 		const actualScore = isWin ? 1 : 0
 		const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - viewerRating) / 400));
 		return viewerRating + kFactor * (actualScore - expectedScore);
+	}
+
+	getUserStatus(userId: number): UserWithStatusDTO["status"] {
+		const userGame = this.getUserGame(userId);
+
+		if (!isDef(userGame)) {
+			return "OFFLINE"
+		}
+		if (isDef(userGame.gameId)) {
+			return "INGAME"
+		}
+		if (isDef(userGame.search)) {
+			return "SEARCH"
+		}
+		return "ONLINE"
 	}
 }

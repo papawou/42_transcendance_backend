@@ -4,7 +4,7 @@ import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { isDef } from '@/technical/isDef';
-import { CancelFriendRequestDTO, ChangeUsernameDTO, LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO, UserStatusDTO } from './user.dto';
+import { CancelFriendRequestDTO, ChangeUsernameDTO, LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO } from './user.dto';
 import { GameService } from '@/game/game.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -37,32 +37,12 @@ export class UserController {
 		if (!isDef(user)) {
 			throw new NotFoundException()
 		}
+
 		const { ft_id, tfaSecret, ...payload } = user
-
-		return payload;
-	}
-
-	@UseGuards(JwtAuthGuard)
-	@Get(':id/user/status')
-	async getUserStatus(
-		@Req() req: AuthRequest,
-		@Param('id', ParseIntPipe) id: number
-	): Promise<UserStatusDTO> {
-		const viewerId = req.user.userId
-
-		const viewer = await this.userService.getUser(viewerId)
-		if (!isDef(viewer) || viewer.friends.filter(p => p.id === id).length === 0) {
-			return { status: "null" }
-		}
-
-		const userStatus = this.gameService.getUserGame(id)
-		if (!isDef(userStatus)) {
-			return { status: "OFFLINE" }
-		}
-		if (userStatus.search) {
-			return { status: "SEARCH" }
-		}
-		return { status: isDef(userStatus.gameId) ? "INGAME" : "ONLINE" };
+		return {
+			...payload,
+			friends: payload.friends.map(p => ({ ...p, status: this.gameService.getUserStatus(p.id) }))
+		};
 	}
 
 	@UseGuards(JwtAuthGuard)

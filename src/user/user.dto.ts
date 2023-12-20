@@ -14,15 +14,15 @@ export class UserDTO {
     elo!: number
 }
 
-export class UserStatusDTO {
-    @ApiProperty({ enum: ['SEARCH', 'INGAME', 'OFFLINE', "ONLINE", "null"] })
-    status!: "SEARCH" | "INGAME" | "OFFLINE" | "ONLINE" | "null"
+export class UserWithStatusDTO extends UserDTO {
+    @ApiProperty({ enum: ['SEARCH', 'INGAME', 'OFFLINE', "ONLINE", undefined] })
+    status!: "SEARCH" | "INGAME" | "OFFLINE" | "ONLINE" | undefined
 }
 
 export class UserExpandedDTO extends UserDTO {
     @ValidateNested({ each: true })
     @Type(() => UserDTO)
-    friends!: UserDTO[]
+    friends!: UserWithStatusDTO[]
 
     @ValidateNested({ each: true })
     @Type(() => UserDTO)
