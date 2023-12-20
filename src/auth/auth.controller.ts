@@ -19,12 +19,13 @@ export class AuthController {
         const code = body.code
         const params = new URLSearchParams()
         params.append('grant_type', 'authorization_code')
-        params.append('client_id', this.configService.get<string>("FT_CLIENT_ID") ?? "")
-        params.append('client_secret', this.configService.get<string>("FT_CLIENT_SECRET") ?? "")
+        params.append('client_id', process.env.FT_CLIENT_ID!)
+        params.append('client_secret', process.env.FT_CLIENT_SECRET!)
         params.append('code', code)
-        params.append('redirect_uri', this.configService.get<string>("FT_REDIRECT_URI") ?? "")
+        params.append('redirect_uri', process.env.FT_REDIRECT_URI!)
+
         const post = await axios
-            .post(this.configService.get<string>("FT_OAUTH_42") ?? "", params)
+            .post("https://api.intra.42.fr/oauth/token", params)
             .then((resp) => resp.data)
             .catch((err) => {
                 throw new NotFoundException()
@@ -35,7 +36,7 @@ export class AuthController {
         }
 
         const get = await axios
-            .get(this.configService.get<string>("FT_ME_42") ?? "", {
+            .get('https://api.intra.42.fr/v2/me', {
                 headers: { 'Authorization': `Bearer ${post.access_token}` }
             })
             .then((resp) => resp.data)
