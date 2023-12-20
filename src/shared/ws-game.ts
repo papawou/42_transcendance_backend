@@ -69,7 +69,8 @@ export type WsGameEvents = {
         in: undefined,
         out: {
             senderId: number,
-            createdAt: string
+            createdAt: string,
+            type: "TROLL" | "CASUAL"
         }
     }
 

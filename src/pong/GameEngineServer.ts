@@ -8,11 +8,15 @@ import { getBodyLine } from "@/shared/pong/physics/rigid/Line";
 import { getBodyBox } from "@/shared/pong/physics/rigid/Box";
 import { getBodyCircle } from "@/shared/pong/physics/rigid/Circle";
 import { GameType } from "@/shared/pong/pong";
+import dayjs from "dayjs";
 
 export class GameEngineServer extends GameEngine<GameObjectServer> {
 
     triggerCallbacks: Array<() => void> = [];
     postLoopCb?: () => void;
+
+
+    trollLoop?: dayjs.Dayjs
 
     constructor(gameId: string, width: number, height: number, type: GameType, scene: Scene<GameObjectServer>, physics: PhysicsServer) {
         super(gameId, width, height, type, scene, physics);
@@ -127,6 +131,15 @@ export class GameEngineServer extends GameEngine<GameObjectServer> {
     }
 
     loop() {
+        if (this.type === "TROLL") {
+            if (!isDef(this.trollLoop)) {
+                this.trollLoop = dayjs()
+            }
+            else if (dayjs().diff(this.trollLoop, "second") >= 2) {
+                this.addBall()
+                this.trollLoop = dayjs()
+            }
+        }
         super.loop()
         this.triggerCallbacks.forEach(cb => this.callCb(cb))
         this.triggerCallbacks = []

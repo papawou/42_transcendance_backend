@@ -9,10 +9,9 @@ import { UserService } from "@/user/user.service";
 import { Injectable } from "@nestjs/common";
 import { GameType } from "@prisma/client";
 import { randomUUID } from "crypto";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 
-
-type Duel = { createdAt: dayjs.Dayjs, targetId: number }
+type Duel = { createdAt: dayjs.Dayjs, targetId: number, type: "TROLL" | "CASUAL" }
 
 @Injectable()
 export class GameService {
@@ -98,7 +97,7 @@ export class GameService {
 	}
 
 	//Duels
-	createDuel(senderId: number, targetId: number): Duel | undefined {
+	createDuel(senderId: number, targetId: number, duelType: Duel["type"]): Duel | undefined {
 		if (senderId === targetId) {
 			return undefined;
 		}
@@ -111,42 +110,40 @@ export class GameService {
 			return undefined;
 		}
 
-		//sender has already a pending invitation
 		const senderDuel = this.duels.get(senderId)
 		if (isDef(senderDuel) && this.isDuelValid(senderDuel)) {
 			return undefined;
 		}
 
-		//senderId is already invited by targetId //TODO turn into acceptDuel ?
 		const targetDuel = this.duels.get(targetId)
 		if (isDef(targetDuel) && targetDuel.targetId === senderId && this.isDuelValid(targetDuel)) {
 			return undefined
 		}
-		const duel = { createdAt: dayjs(), targetId: targetId }
+		const duel = { createdAt: dayjs(), targetId: targetId, type: duelType }
 		this.duels.set(senderId, duel)
 		return duel;
 	}
 
 	acceptDuel(targetId: number, senderId: number) {
 		if (targetId === senderId) {
-			return false;
+			return undefined;
 		}
 
 		const duel = this.duels.get(senderId)
 		if (!isDef(duel) || duel.targetId !== targetId || !this.isDuelValid(duel)) {
-			return false;
+			return undefined;
 		}
 		const target = this.getUserGame(targetId)
 		if (!isDef(target) || !this.isFreeGame(target)) {
-			return false;
+			return undefined;
 		}
 		const sender = this.getUserGame(senderId)
 		if (!isDef(sender) || !this.isFreeGame(sender)) {
-			return false;
+			return undefined;
 		}
 
 		this.duels.delete(senderId)
-		return true;
+		return duel;
 	}
 
 	isDuelValid(duel: Duel) {
@@ -156,7 +153,7 @@ export class GameService {
 
 	getNewRating(viewerRating: number, opponentRating: number, isWin: boolean, kFactor: number = 30): number {
 		const actualScore = isWin ? 1 : 0
-		const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - viewerRating) / 400));;
+		const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - viewerRating) / 400));
 		return viewerRating + kFactor * (actualScore - expectedScore);
 	}
 }

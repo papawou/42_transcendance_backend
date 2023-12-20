@@ -105,6 +105,9 @@ function intersectCircles(a: GameObject<BodyCircle>, b: GameObject<BodyCircle>):
     }
 
     const normal = normVec(vDist);
+    if (!isDef(normal)) {
+        return null;
+    }
     return { bodyA: a, bodyB: b, point: { normal, depth } };
 }
 
@@ -122,6 +125,9 @@ function intersectBoxCircle(a: GameObject<BodyBox>, b: GameObject<BodyCircle>): 
     }
 
     const normal = normVec(localPoint);
+    if (!isDef(normal)) {
+        return null;
+    }
     const depth = (b.body.g.rad - dist);
 
     return { bodyA: a, bodyB: b, point: { normal, depth } };
@@ -140,12 +146,15 @@ function intersectLineCircle(a: GameObject<BodyLine>, b: GameObject<BodyCircle>)
     if (dist > b.body.g.rad) {
         return null;
     }
-
+    const normal = normVec(lineToPoint)
+    if (!isDef(normal)) {
+        return null;
+    }
     return {
         bodyA: a,
         bodyB: b,
         point: {
-            normal: normVec(lineToPoint),
+            normal: normal,
             depth: b.body.g.rad - dist
         }
     }

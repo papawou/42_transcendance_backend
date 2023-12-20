@@ -211,9 +211,7 @@ export class UserService {
 		try {
 			return await prisma.user.update({
 				where: { id: userId },
-				data: {
-					name: newName,
-				},
+				data: { name: `${newName}#${userId}` },
 			});
 		}
 		catch { }
@@ -224,9 +222,7 @@ export class UserService {
 		try {
 			return await prisma.user.update({
 				where: { id: userId },
-				data: {
-					pic: image,
-				}
+				data: { pic: image }
 			});
 		}
 		catch { }

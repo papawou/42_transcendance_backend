@@ -59,13 +59,11 @@ export function magnVec(v: Vector, sqrt: boolean = true): number {
 	return sqrt ? Math.sqrt(magn) : magn
 }
 
-export function normVec(v: Vector): Vector {
+export function normVec(v: Vector): Vector | undefined {
 	const magn = magnVec(v);
 
 	if (magn <= 0) {
-
-		debugger;
-		throw (`normVec: fatal Error magn = ${magn}`)
+		return undefined
 	}
 
 	return { x: v.x / magn, y: v.y / magn }

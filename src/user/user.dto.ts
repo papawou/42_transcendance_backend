@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { Game, GameType } from "@prisma/client"
+import { GameType } from "@prisma/client"
 import { Type } from "class-transformer"
-import { IsBoolean, IsDateString, IsDefined, IsEnum, IsInt, IsNotEmptyObject, IsNumber, IsString, ValidateNested, isNumber } from "class-validator"
+import { IsBoolean, IsDateString, IsDefined, IsEnum, IsNotEmptyObject, IsNumber, IsString, Length, ValidateNested } from "class-validator"
 
 export class UserDTO {
     @IsNumber()
@@ -101,4 +101,10 @@ export class LeaderboardUserDTO {
 export class CancelFriendRequestDTO {
     @IsNumber()
     userId!: number
+}
+
+export class ChangeUsernameDTO {
+    @IsString()
+    @Length(1, 20)
+    username!: string
 }

@@ -51,4 +51,5 @@ model Game {
 enum GameType {
     RANKED
     CASUAL
+    TROLL
 }

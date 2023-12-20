@@ -18,11 +18,11 @@ export class GameController {
 	async duelInvite(@Req() req: AuthRequest, @Body() body: DuelInviteDTO) {
 		const senderId = req.user.userId
 		const targetId = body.targetId
-		const duel = this.gameService.createDuel(senderId, targetId)
+		const duel = this.gameService.createDuel(senderId, targetId, body.type)
 		if (!isDef(duel)) {
 			return false;
 		}
-		this.gameGateway.emitToUser<WsGame.duelInvite>(targetId, WsGame.duelInvite, { senderId, createdAt: duel.createdAt.toISOString() })
+		this.gameGateway.emitToUser<WsGame.duelInvite>(targetId, WsGame.duelInvite, { senderId, createdAt: duel.createdAt.toISOString(), type: duel.type })
 		return true;
 	}
 
@@ -31,13 +31,13 @@ export class GameController {
 	async duelAccept(@Req() req: AuthRequest, @Body() body: DuelAcceptDTO) {
 		const targetId = req.user.userId
 		const senderId = body.senderId
-		const ret = this.gameService.acceptDuel(targetId, senderId)
+		const duel = this.gameService.acceptDuel(targetId, senderId)
 
-		if (!ret) {
+		if (!isDef(duel)) {
 			return false
 		}
 
-		const game = this.gameGateway.createGame([req.user.userId, body.senderId], "CASUAL");
+		const game = this.gameGateway.createGame([req.user.userId, body.senderId], duel.type);
 		if (!isDef(game)) {
 			return false;
 		}

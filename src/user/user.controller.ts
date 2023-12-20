@@ -1,11 +1,12 @@
-import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, NotFoundException, Param, ParseFilePipe, ParseIntPipe, Post, Req, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags } from '@nestjs/swagger';
 import prisma from 'src/database/prismaClient';
 import { AuthRequest, JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { isDef } from '@/technical/isDef';
-import { CancelFriendRequestDTO, LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO, UserStatusDTO } from './user.dto';
+import { CancelFriendRequestDTO, ChangeUsernameDTO, LeaderboardUserDTO, UserDTO, UserExpandedDTO, UserHistoryDTO, UserStatusDTO } from './user.dto';
 import { GameService } from '@/game/game.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('users')
 @Controller('users')
@@ -65,28 +66,47 @@ export class UserController {
 	}
 
 	@UseGuards(JwtAuthGuard)
-	@Post('/change-name/:newName')
+	@Post('/change-name')
 	async changeName(
 		@Req() req: AuthRequest,
-		@Param('newName') newName: string): Promise<UserDTO> { //TODO check IsString param && maxLength (rule enforced in frontend not backend)
+		@Body() body: ChangeUsernameDTO): Promise<UserDTO> {
 		const viewerId = req.user.userId
-		const updatedUser = await this.userService.changeUsername(viewerId, newName);
+		const updatedUser = await this.userService.changeUsername(viewerId, body.username.trim());
 
 		if (!isDef(updatedUser))
 			throw new NotFoundException();
 		return updatedUser;
 	}
 
-	@UseGuards(JwtAuthGuard)
-	@Post('/change-avatar')
-	async changeAvatar(@Req() req: AuthRequest, @Body('image') image: string): Promise<UserDTO> { //TODO check if image is a real image
-		const viewerId = req.user.userId;
-		const updatedUser = await this.userService.changeAvatar(viewerId, image);
+	// @UseGuards(JwtAuthGuard)
+	// @UseInterceptors(FileInterceptor('file'))
+	// @Post('/change-avatar')
+	// async changeAvatar(
+	// 	@Req() req: AuthRequest,
+	// 	@UploadedFile(
+	// 		new ParseFilePipe({
+	// 			validators: [
+	// 				new MaxFileSizeValidator({ maxSize: 1000 }),
+	// 				new FileTypeValidator({ fileType: 'image/jpeg' }),
+	// 				new FileTypeValidator({ fileType: 'image/png' })
+	// 			],
+	// 		}),
+	// 	) file: Express.Multer.File
+	// ): Promise<UserDTO> {
+	// 	const viewerId = req.user.userId;
 
-		if (!isDef(updatedUser))
-			throw new NotFoundException();
-		return updatedUser;
-	}
+	// 	const formData = new FormData();
+	//     formData.append('file', Buffer.from(file.buffer), {
+	//         filename: file.originalname,
+	//         contentType: file.mimetype,
+	//     });
+
+	// 	const updatedUser = await this.userService.changeAvatar(viewerId, formData);
+
+	// 	if (!isDef(updatedUser))
+	// 		throw new NotFoundException();
+	// 	return updatedUser;
+	// }
 
 	/*------------------------------FRIENDS--------------------------*/
 

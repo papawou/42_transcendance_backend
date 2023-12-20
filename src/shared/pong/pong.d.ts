@@ -2,7 +2,7 @@ import { GameObjectServer } from "../server/GameObjectServer";
 
 export type GameEngineStatus = "RUNNING" | "PENDING" | "CLOSED"
 
-export type GameType = "CASUAL" | "RANKED"
+export type GameType = "CASUAL" | "RANKED" | "TROLL"
 
 export type PlayerData = {
     playerId: string,

@@ -3,6 +3,7 @@ import { Physics } from "./physics/Physics";
 import { isDef } from "@/technical/isDef";
 import { GameEngineData, GameEngineStatus, GameObjectSide, GameType, PlayerData } from "./pong";
 import { Player } from "./Player";
+import dayjs, { Dayjs } from "dayjs";
 
 export class GameEngine<T extends GameObjectSide> {
     sc: Scene<T>;
@@ -120,7 +121,7 @@ export class GameEngine<T extends GameObjectSide> {
             return;
         }
         ++player.score
-        if (player.score >= 5) {
+        if (player.score >= (this.type === "TROLL" ? 50 : 5)) {
             this.stop(`Player ${player.userId} has won`)
         }
     }

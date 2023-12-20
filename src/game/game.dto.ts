@@ -1,5 +1,7 @@
 import { WsGame, WsGameDebug, WsGameJoinRoom, WsGameLeaveRoom, WsGameRoom, WsGameSendKey, WsGameSetReady } from "@/shared/ws-game";
-import { IsBoolean, IsNumber, IsString, isString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
+import { GameType } from "@prisma/client";
+import { IsBoolean, IsNumber, IsString } from "class-validator";
 
 class WsGameRoomDTO implements WsGameRoom {
     @IsString()
@@ -38,6 +40,9 @@ export type WsGameDTO = {
 export class DuelInviteDTO {
     @IsNumber()
     targetId!: number
+
+    @ApiProperty({ enum: [GameType.CASUAL, GameType.TROLL] })
+    type!: "CASUAL" | "TROLL"
 }
 
 export class DuelAcceptDTO {
