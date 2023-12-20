@@ -6,7 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
-import { WsGameDTO } from "./game.dto";
+import { WsGameJoinRoomDTO, WsGameLeaveRoomDTO, WsGameSendKeyDTO, WsGameSetReadyDTO } from "./game.dto";
 import { WS_FAIL, WsGame, WsGameIn, WsGameOut } from "@/shared/ws-game";
 import { UserGame } from "@/shared/shared";
 import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
@@ -14,7 +14,7 @@ import { GameService } from "./game.service";
 import { GameType } from "@/shared/pong/pong";
 
 @WebSocketGateway({ cors: true })
-@UsePipes()
+@UsePipes(new ValidationPipe())
 export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	private cbIntervalSearch: NodeJS.Timeout;
 
@@ -90,7 +90,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.joinRoom)
-	handleJoinRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameDTO[WsGame.joinRoom]): WsGameOut<WsGame.joinRoom> {
+	handleJoinRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameJoinRoomDTO): WsGameOut<WsGame.joinRoom> {
 		//userGame q
 		const user = this.gameService.getUserGame(client.user.userId);
 		if (isDef(user?.gameId) && user?.gameId !== msg.gameId) {
@@ -115,7 +115,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.setReady)
-	handleReady(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameDTO[WsGame.setReady]): WsGameOut<WsGame.setReady> {
+	handleReady(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameSetReadyDTO): WsGameOut<WsGame.setReady> {
 		const game = this.gameService.getGame(msg.gameId);
 		if (!isDef(game)) {
 			return WS_FAIL;
@@ -132,7 +132,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.leaveRoom)
-	handleLeaveRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameDTO[WsGame.leaveRoom]): WsGameOut<WsGame.leaveRoom> {
+	handleLeaveRoom(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameLeaveRoomDTO): WsGameOut<WsGame.leaveRoom> {
 		const game = this.gameService.getGame(msg.gameId)
 		if (!isDef(game)) {
 			return;
@@ -143,7 +143,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayInit {
 	//---------------RUNNING GAME
 	@UseGuards(WsJwtAuthGuard)
 	@SubscribeMessage(WsGame.sendKey)
-	handleKey(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameDTO[WsGame.sendKey]): WsGameOut<WsGame.sendKey> {
+	handleKey(@ConnectedSocket() client: AuthSocket, @MessageBody() msg: WsGameSendKeyDTO): WsGameOut<WsGame.sendKey> {
 		const game = this.gameService.getGame(msg.gameId)
 		if (!isDef(game)) {
 			return;
