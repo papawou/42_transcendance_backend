@@ -58,35 +58,17 @@ export class UserController {
 		return updatedUser;
 	}
 
-	// @UseGuards(JwtAuthGuard)
-	// @UseInterceptors(FileInterceptor('file'))
-	// @Post('/change-avatar')
-	// async changeAvatar(
-	// 	@Req() req: AuthRequest,
-	// 	@UploadedFile(
-	// 		new ParseFilePipe({
-	// 			validators: [
-	// 				new MaxFileSizeValidator({ maxSize: 1000 }),
-	// 				new FileTypeValidator({ fileType: 'image/jpeg' }),
-	// 				new FileTypeValidator({ fileType: 'image/png' })
-	// 			],
-	// 		}),
-	// 	) file: Express.Multer.File
-	// ): Promise<UserDTO> {
-	// 	const viewerId = req.user.userId;
+	@UseGuards(JwtAuthGuard)
+	@Post('/change-avatar')
+	async changeAvatar(@Req() req: AuthRequest, @Body('image') image: string) {
+		const userId = Number(req.user.userId);
 
-	// 	const formData = new FormData();
-	//     formData.append('file', Buffer.from(file.buffer), {
-	//         filename: file.originalname,
-	//         contentType: file.mimetype,
-	//     });
+		const updatedUser = await this.userService.changeAvatar(userId, image);
 
-	// 	const updatedUser = await this.userService.changeAvatar(viewerId, formData);
-
-	// 	if (!isDef(updatedUser))
-	// 		throw new NotFoundException();
-	// 	return updatedUser;
-	// }
+		if (!isDef(updatedUser))
+			throw new NotFoundException();
+		return updatedUser;
+	}
 
 	/*------------------------------FRIENDS--------------------------*/
 
