@@ -16,6 +16,7 @@ import { AuthSocket, WSAuthMiddleware } from '@/events/auth-socket.middleware';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { isBoolean, isNumber, isString } from 'class-validator';
+import { isDef } from '@/technical/isDef';
 
 @WebSocketGateway({ cors: true })
 export class ChatGateway implements OnGatewayConnection {
@@ -30,7 +31,7 @@ export class ChatGateway implements OnGatewayConnection {
 		const middle = WSAuthMiddleware(this.jwtService, this.configService);
 		server.use(middle)
 	}
-	
+
 	@SubscribeMessage('connection')
 	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
 
@@ -79,12 +80,12 @@ export class ChatGateway implements OnGatewayConnection {
 		let roomDto: RoomDto | undefined = this.chatService.getRoomFromName(body.roomName);
 		if (!roomDto)
 			return;
-			
+
 		if (this.chatService.isUserIdInRoom(socket.user.userId, roomDto)) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'You are already in this room.' });
 			return;
 		}
-		
+
 		if (roomDto.password !== '' && body.password === '') {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room is locked by a password.' });
 			return;
@@ -173,6 +174,18 @@ export class ChatGateway implements OnGatewayConnection {
 			return;
 		}
 
+		const allSenderMsgs = this.chatService.PrivateMsgList.get(sender.id);
+		const allReceiverMsgs = this.chatService.PrivateMsgList.get(receiver.id);
+
+		if (isDef(allSenderMsgs) && isDef(allReceiverMsgs)) {
+			const senderHasReceiver = allSenderMsgs.some(entry => entry.userDto.id === receiver.id);
+			const receiverHasSender = allReceiverMsgs.some(entry => entry.userDto.id === sender.id);
+			if (senderHasReceiver && receiverHasSender) {
+				this.server.to(socket.id).emit('chatNotif', { notif: `Already in a discussion with ${receiver.name}` });
+				return;
+			}
+		}
+
 		this.chatService.addToPmList(sender, receiver);
 
 		this.server.to('user_' + sender.id.toString()).emit('newPrivateMsgUser', { userDto: receiver });
@@ -210,7 +223,7 @@ export class ChatGateway implements OnGatewayConnection {
 		const roomReturn: RoomReturnDto = this.chatService.getReturnRoom(roomDto);
 		this.server.to(roomDto.roomName).emit('roomChanged', { newRoom: roomReturn });
 	};
-	
+
 	/*********************** CHANGE PASSWORD  ************************/
 
 	@UseGuards(WsJwtAuthGuard)
@@ -261,7 +274,7 @@ export class ChatGateway implements OnGatewayConnection {
 			return;
 		}
 
-		if (roomDto.owner === body.userId  || userDto.id === body.userId) {
+		if (roomDto.owner === body.userId || userDto.id === body.userId) {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'An error has occured.' });
 			return;
 		}
@@ -407,7 +420,7 @@ export class ChatGateway implements OnGatewayConnection {
 			this.server.to(socket.id).emit('chatNotif', { notif: 'This room no longer exists.' });
 			return;
 		}
-		
+
 		const userDto: UserDto | null = await this.chatService.getUserFromId(socket.user.userId);
 		const roomDto: RoomDto | undefined = this.chatService.getRoomFromName(body.roomName);
 		if (!userDto || !roomDto)

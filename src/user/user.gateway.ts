@@ -7,8 +7,6 @@ import { WsJwtAuthGuard } from "@/auth/ws-jwt-auth.guard";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import { AuthSocket, WSAuthMiddleware } from "@/events/auth-socket.middleware";
-import prisma from "@/database/prismaClient";
-
 
 @WebSocketGateway({
 	cors: {
@@ -31,7 +29,7 @@ export class UserGateway implements OnGatewayConnection {
 
 	@SubscribeMessage('connection')
 	async handleConnection(@ConnectedSocket() client: AuthSocket, ...args: any[]) {
-		client.join('user_' + client.user.userId.toString());
+		client.join(`user:${client.user.userId}`);
 	}
 
 	@UseGuards(WsJwtAuthGuard)
@@ -68,7 +66,7 @@ export class UserGateway implements OnGatewayConnection {
 	async acceptFriendRequest(@ConnectedSocket() connectSocket: AuthSocket, @MessageBody() body: { friendId: number }) {
 		const viewerId = connectSocket.user.userId
 		const senderId = body.friendId
-		
+
 		const success = await this.userService.acceptFriendRequest(viewerId, senderId);
 		if (!success) {
 			return;
